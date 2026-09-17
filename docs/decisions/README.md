@@ -7,10 +7,14 @@ supersedes the old one, so the reasoning trail stays intact.
 | # | Decision | Status |
 |---|---|---|
 | [0001](ADR-0001-tech-stack.md) | TypeScript + three.js + Capacitor | Accepted |
-| [0002](ADR-0002-sim-render-separation.md) | Sim/render separation, fixed timestep | Accepted |
+| [0002](ADR-0002-sim-render-separation.md) | Sim/render separation, fixed timestep | Accepted (refined by 0011, 0012) |
 | [0003](ADR-0003-hybrid-rendering.md) | Hybrid 3D road / 2.5D scenery | Accepted |
 | [0004](ADR-0004-one-finger-control.md) | Position-mapped one-finger control | Accepted |
 | [0005](ADR-0005-traffic-and-stakes.md) | Same-direction traffic, soft collisions, no fail state | Accepted |
-| [0006](ADR-0006-portrait-and-world.md) | Portrait cockpit; seamless biome and time drift | Accepted |
+| [0006](ADR-0006-portrait-and-world.md) | Portrait cockpit; seamless biome and time drift | Accepted (framing figures superseded by 0009) |
 | [0007](ADR-0007-art-direction.md) | Stylised low-poly with a detailed 70s interior | Accepted |
 | [0008](ADR-0008-dev-feedback-loop.md) | Screenshot-first development loop | Accepted |
+| [0009](ADR-0009-horizontal-fov.md) | FOV authored horizontally; aperture proportions corrected | Accepted |
+| [0010](ADR-0010-camera-look-ahead.md) | The view leads the car into corners | Accepted |
+| [0011](ADR-0011-module-architecture.md) | Sealed domains, contract layer, module lifecycle | Accepted |
+| [0012](ADR-0012-road-integration.md) | Road geometry is integrated forward, not randomly addressable | Accepted |

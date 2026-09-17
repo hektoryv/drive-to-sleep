@@ -139,6 +139,19 @@ Notes:
 - Roll is capped well below what a real car does; on a small screen, 4.5° is
   already a lot of horizon movement.
 
+### The view leads the car
+
+The camera is not bolted rigidly to the car's nose. It carries a look-ahead
+yaw that turns it toward the road's heading roughly three quarters of a second
+ahead, so you look through a corner rather than at the outside of it
+(ADR-0010). Partway only, at 45% of the angle and capped at 14° — turning the
+view fully into the corner would pin the road to the centre of the frame and
+the corner would stop reading as a corner.
+
+The yaw belongs to the driver's head, not the car. From Phase 4 the cockpit
+stays with the car, so turning into a bend swings the A-pillars and the dash
+across the view — the same thing your eyes do through a real windscreen.
+
 ### Off-road
 
 Leaving the tarmac is a soft penalty, not a failure: grip drops, drag rises,

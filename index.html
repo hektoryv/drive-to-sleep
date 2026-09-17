@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#08080a" />
+    <title>Drive to Sleep</title>
+    <!-- Inline, so the page requests nothing and a console 404 always means
+         something real. A proper icon arrives with the Android build. -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2308080a'/><rect y='9' width='16' height='1' fill='%23d98b53'/></svg>" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="overlay"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

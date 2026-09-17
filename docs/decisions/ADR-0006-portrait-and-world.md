@@ -1,8 +1,14 @@
 # ADR-0006 — Portrait cockpit view; seamless biome and time-of-day drift
 
-**Date:** 2026-09-17 · **Status:** Accepted
+**Date:** 2026-09-17 · **Status:** Accepted — framing figures superseded in
+part by [ADR-0009](ADR-0009-horizontal-fov.md)
 
 Two decisions, recorded together because they interact.
+
+> The portrait decision below stands in full. The specific aperture
+> proportions and the vertical-FOV figure in it were estimates made before
+> anything was rendered, and two of them were wrong; ADR-0009 replaces them and
+> explains what went wrong. Left here unedited, as the record should be.
 
 ## Portrait
 
