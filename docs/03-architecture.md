@@ -2,83 +2,45 @@
 
 *Last updated: 2026-09-17*
 
-## The one rule
+## The two rules
 
-> **`sim/` must never import from `render/`.**
+> **1. No domain imports another domain.**
+> **2. `sim/` and `world/gen/` never import three.js or touch the DOM.**
 
-The simulation is pure: seed in, state out, no WebGL, no DOM, no three.js. The
-renderer reads simulation state and draws it.
+The first is what lets separate people work on the environment, the cockpit and
+the UI at once without their changes reaching each other (ADR-0011). The second
+is what keeps the simulation and the generator testable in plain Node and
+portable off this rendering stack (ADR-0002).
 
-This is enforced by a lint rule, and it buys:
+Both are enforced by ESLint rather than left to discipline, with error messages
+that say what to do instead. Everything else in this document is negotiable;
+these are not.
 
-- the whole vehicle model and world generator are testable in plain Node,
-- handling can be tuned and regression-tested without a GPU,
-- deterministic replay from a seed for debugging "that corner felt wrong".
-
-Everything else in this document is negotiable. This isn't.
-
-## Module map
+The full ownership map and the guide to working inside one domain are in
+[06-modules.md](06-modules.md). The short version:
 
 ```
 src/
-├─ main.ts                  bootstrap, canvas, orientation lock, resize
+├─ core/        maths, RNG, loop, event bus, storage. Depends on nothing.
+├─ contracts/   the interfaces between domains. Types only.
+├─ app/         composition root, module registry, debug overlay.
 │
-├─ core/                    no dependencies on anything below
-│  ├─ loop.ts               fixed-step accumulator + interpolation alpha
-│  ├─ rng.ts                seeded PRNG + hash-based value/gradient noise
-│  ├─ math.ts               vec2/vec3, spring-damper, easing, clamp, lerp
-│  ├─ events.ts             tiny typed event bus (sim → ui, sim → fx)
-│  └─ storage.ts            localStorage wrapper (best distance, settings, resume point)
-│
-├─ input/
-│  ├─ pointer.ts            raw touch/mouse → normalised offset from dynamic origin
-│  └─ controls.ts           offset → { steer, throttle, brake } with curves + drift
-│
-├─ sim/                     PURE. no three.js, no DOM.
-│  ├─ tuning.ts             ★ every magic number in the game lives here
-│  ├─ vehicle.ts            the car: speed, yaw, grip, slide
-│  ├─ attitude.ts           roll / pitch / heave springs
-│  ├─ traffic.ts            AI car spawn, follow, despawn
-│  ├─ collision.ts          capsule tests + impulse response
-│  ├─ scoring.ts            distance, flow, overtakes
-│  └─ world-query.ts        "what is the road doing at distance s?" — the sim's
-│                           read-only view of the world
-│
-├─ world/                   generation. also pure — no three.js.
-│  ├─ road.ts               curvature/grade/width fields over distance → stations
-│  ├─ stations.ts           the sampled centreline; the shared coordinate backbone
-│  ├─ chunks.ts             chunk lifecycle, ring buffer, recycling
-│  ├─ terrain.ts            road-relative terrain ribbon heights
-│  ├─ props.ts              deterministic prop placement per chunk
-│  └─ biome.ts              biome weights over distance + parameter blending
-│
-├─ render/                  three.js lives here and nowhere else
-│  ├─ renderer.ts           WebGLRenderer setup, tonemapping, resize, quality tiers
-│  ├─ camera.ts             driver-eye rig; consumes attitude
-│  ├─ sky.ts                gradient sky shader, sun, stars, moon
-│  ├─ atmosphere.ts         fog colour derived from sky; height fog
-│  ├─ road-mesh.ts          sweeps the cross-section along stations → geometry
-│  ├─ terrain-mesh.ts       terrain ribbons
-│  ├─ props-render.ts       instanced billboards + impostor mountain layers
-│  ├─ traffic-render.ts     instanced traffic meshes
-│  ├─ materials.ts          shared shaders, the palette uniform block
-│  ├─ post.ts               tonemap, bloom, vignette, grain, grade
-│  └─ debug.ts              wireframes, station markers, free-fly camera, stats
-│
-├─ cockpit/                 the 911 interior — its own module, it's that big
-│  ├─ interior.ts           dash, pillars, console, door cards
-│  ├─ wheel.ts              rim, spokes, hub; rotates with steer input
-│  ├─ gauges.ts             five dials, needles, backlighting
-│  └─ mirror.ts             rear-view
-│
-├─ ui/
-│  ├─ hud.ts                distance, flow arc, overtake tally
-│  └─ screens.ts            start, pause panel, drive summary
-│
-└─ fx/
-   ├─ dust.ts               off-road particle wash
-   └─ shake.ts              collision jolt → attitude spring impulses
+├─ world/       THE ENVIRONMENT — generation *and* its meshes.
+│  ├─ gen/      pure: fields, events, stations, terrain, road query
+│  ├─ view/     three.js: road mesh, terrain mesh, sky, materials
+│  └─ world-module.ts
+├─ sim/         THE CAR — pure. vehicle, attitude, traffic, collision, scoring.
+├─ input/       touch → control state
+├─ render/      engine layer: WebGL, camera rig, framing, post
+├─ cockpit/     the 911 interior
+├─ ui/          HUD and screens
+└─ fx/          particles, shake
 ```
+
+Each domain exposes one `GameModule`. The registry gives it its own
+`THREE.Group` and its own DOM layer and drives
+`init → start → step → frame → resize → dispose`. A module that stays inside
+its own group and overlay cannot affect another one.
 
 ## Coordinate systems
 
@@ -111,8 +73,15 @@ can be evaluated at any time without having generated what came before it** —
 which is what lets us spawn traffic far ahead and keep everything deterministic.
 
 **Stations** are the discretisation: the centreline sampled every 4 m, each
-carrying position, heading, curvature, grade, bank, width and biome weights.
-Every other system reads stations, never the raw fields.
+carrying position, heading, curvature, grade, bank and width. Every other
+system reads stations, never the raw fields.
+
+A caveat discovered in Phase 1 and recorded as ADR-0012: position and heading
+are the *integral* of curvature, so they are not randomly addressable the way
+the fields are. Stations are integrated forward from zero into a ring buffer;
+reaching an arbitrary distance costs one linear walk, paid once at startup.
+A seed plus a distance still specifies a place exactly — it is only the cost
+model that differs from the fields.
 
 **Events** are the anti-monotony mechanism. On top of the noise, the generator
 injects hand-authored shapes at intervals — a hairpin, a long descending
@@ -120,9 +89,22 @@ sweeper, a crest with a blind corner behind it, a bridge, a straight with a
 view. These are what make the road feel designed rather than random, and are
 the highest-leverage place to spend tuning time.
 
-**Chunks** are 128 stations (~512 m). A ring buffer of ~12 chunks is kept
-alive: 2 behind, 10 ahead. Geometry is recycled — buffers are written in place,
-never reallocated, so there is no GC churn while driving.
+**Chunks** are 128 stations (~512 m). A ring buffer of 13 chunks is kept alive:
+2 behind, 10 ahead, ~6.6 km in total. Writing station `i` overwrites station
+`i - capacity`, so eviction needs no bookkeeping and nothing is ever
+reallocated.
+
+The meshes are **one buffer each**, rewritten in place when the window advances
+by a whole chunk — roughly every 17 seconds at cruising speed. Not per-chunk
+meshes: the live road runs 6.6 km and the far plane is at 4 km, so the far end
+of the buffer is always at least half a kilometre beyond anything visible and
+nothing can pop. One mesh, one draw call, no chunk lifecycle to get wrong.
+
+Vertex positions are stored relative to a rebase point near the camera, with
+the offset carried in the mesh transform. A float32 at 500 km resolves to about
+6 cm — visible jitter — while three.js composes the model-view matrix on the
+CPU in float64, so keeping the vertices small preserves precision however far
+you drive.
 
 ## Frame flow
 
@@ -188,7 +170,8 @@ Only the sun's position and the player's own inputs are outside this.
 
 | Layer | How |
 |---|---|
-| `core/`, `sim/`, `world/` | Plain Vitest unit tests in Node. No browser. These are the ones that matter. |
+| `core/`, `sim/`, `world/gen/` | Plain Vitest unit tests in Node. No browser. These are the ones that matter. |
+| Domain boundaries | `npm run lint`. The architecture is the lint config. |
 | Handling regression | Scripted input sequences ("full throttle, then 2 s of right lock") → assert on resulting trajectory and attitude envelopes. Catches "I tuned one constant and broke the car". |
 | Determinism | Same seed twice → byte-identical station data. |
 | Visual | Playwright + headless Chromium: drive a fixed seed to fixed distances, screenshot. Compared by eye, not by pixel diff (too brittle for a continuously-varying scene). |

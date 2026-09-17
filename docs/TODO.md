@@ -5,27 +5,24 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 
 ---
 
-## Now — Phase 1: The road
+## Now — Phase 2: The drive
 
-- [ ] Curvature / grade / width fields over `s`
-- [ ] Station sampling; `(s,t) ↔ world` conversions in one place
-- [ ] Chunk ring buffer with in-place recycling, zero steady-state allocation
-- [ ] Road mesh sweep: surface, shoulder, verge, centre and edge lines
-- [ ] Banking from curvature
-- [ ] Event injection: hairpin, sweeper, crest, straight-with-a-view
-- [ ] Terrain ribbons
-- [ ] Free-fly debug camera, station/curvature visualisation
-- [ ] Tests: determinism, chunk recycling, no-allocation
-- [ ] Delete `src/render/placeholder-scene.ts` and `src/world/placeholder-path.ts`
-      (and `tests/placeholder-path.test.ts`) once the real world replaces them
-- [ ] Point the camera look-ahead at the real road's heading field instead of
-      the placeholder path — the rig itself needs no change
+The most important phase in the project. Everything after it is decoration on
+top of it, and its exit criterion needs a real device (ADR-0008).
 
-## Next — Phase 2: The drive
-
-Pulled in when Phase 1 exits. See the [roadmap](04-roadmap.md).
+- [ ] `sim/vehicle.ts` — speed, yaw, grip, slide, per-surface handling
+- [ ] `sim/attitude.ts` — roll / pitch / heave springs
+- [ ] `input/pointer.ts` — dynamic-origin touch, drift, release recentre
+- [ ] `input/controls.ts` — curves, deadzone, steering speed-falloff
+- [ ] Replace `sim/cruise-module.ts` with the real vehicle module
+- [ ] Off-road: grip loss, drag, rumble into the heave spring
+- [ ] Chase camera for debugging (absorbs Phase 1's deferred free-fly camera)
+- [ ] Handling regression tests — scripted inputs, assert on trajectory and
+      attitude envelopes
+- [ ] **Tuning pass.** Budget real time. Expect several rounds.
 
 ## Later
+
 
 Phases 2–7, listed in the [roadmap](04-roadmap.md). Pulled into **Next** as
 each phase opens rather than duplicated here.
@@ -55,6 +52,16 @@ Things to resolve before the phase that needs them:
 - **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
   sequence of stills through one corner, which shows where the view ends up but
   not how it gets there. Needs hands on a device.
+- **Curvature shaping** (Phase 2): `CURVATURE_SHAPE` is 0.62, chosen to fix a
+  road that measured 57% straight. The distribution is a proxy for "a road you
+  want to drive" — re-judge once there is a car to drive it with.
+- **Terrain ribbon edge** (Phase 3): the ribbon is 260 m wide, so on open
+  ground its lateral edge shows against the sky. The fix is the impostor
+  mountain layers, not a wider ribbon.
+- **Rebuild spike** (Phase 6): the meshes rewrite ~230 k vertex components on a
+  chunk boundary, about every 17 seconds. Invisible under software
+  rasterisation; confirm it is invisible on a device too, and split into
+  per-chunk meshes only if it is not.
 - **Velocity-aligned camera term** (Phase 2): once the car can slide, consider
   adding a small term that follows the velocity vector as well as the road
   ahead. Rejected for now as not solving the anticipation problem (ADR-0010),
@@ -71,6 +78,22 @@ Things to resolve before the phase that needs them:
   confirming it doesn't happen mid-drive on a real device.
 
 ## Done
+
+<details>
+<summary>Phase 1 — The road, and the modular restructure (2026-09-17)</summary>
+
+- [x] Sealed domains, `contracts/` layer, module lifecycle, service registry
+- [x] Per-domain tuning files
+- [x] Domain boundaries enforced by ESLint, violations verified to fail
+- [x] `world/gen/` — fields, events, stations, terrain, road query
+- [x] `world/view/` — road mesh, terrain mesh, sky, analytic road markings
+- [x] Ring buffer with in-place recycling and a floating origin
+- [x] Curvature shaping, after measuring the road at 57% straight
+- [x] `sceneReport()` in the test API — diagnose a bad frame from numbers
+- [x] ADR-0011 (modules) and ADR-0012 (integration vs random access)
+- [x] Deleted the Phase 0 placeholders
+
+</details>
 
 <details>
 <summary>Phase 0 — Foundation (2026-09-17)</summary>

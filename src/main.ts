@@ -1,11 +1,10 @@
 /**
- * Entry point: canvas, sizing, lifecycle.
+ * Entry point: canvas, sizing, lifecycle. Everything else lives in `app/`.
  */
 
-import { createGame } from './game.js';
-import { installTestApi } from './test-api.js';
-import type { FramingOverrides } from './render/framing.js';
-import type { PlaceholderTime } from './render/placeholder-scene.js';
+import { createApp } from './app/app.js';
+import { installTestApi } from './app/test-api.js';
+import type { FramingOverrides } from './contracts/view.js';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement | null;
 const overlay = document.getElementById('overlay');
@@ -17,13 +16,12 @@ if (canvas === null || overlay === null) {
 // Query parameters exist for the screenshot harness. They are not a feature.
 const params = new URLSearchParams(location.search);
 const seed = Number(params.get('seed') ?? '1') || 1;
-const time = (params.get('time') ?? 'day') as PlaceholderTime;
 const debugVisible = params.get('debug') !== '0';
 
 /**
  * Framing overrides from the URL, so a sweep across several settings can be
  * shot in one harness run. Degrees in, radians out — degrees are what a person
- * types. The authored values in `VIEW` remain what the game ships with.
+ * types. The authored values in `render/tuning.ts` remain what the game ships.
  */
 function framingFromParams(): FramingOverrides {
   const o: FramingOverrides = {};
@@ -46,15 +44,13 @@ function framingFromParams(): FramingOverrides {
   return o;
 }
 
-const game = createGame({
+const app = createApp({
   canvas,
-  overlayParent: overlay,
+  overlayRoot: overlay,
   seed,
-  time,
   framing: framingFromParams(),
 });
-game.setDebugVisible(debugVisible);
-game.setLookAheadEnabled(params.get('look') !== '0');
+app.setDebugVisible(debugVisible);
 
 function applySize(): void {
   // visualViewport is the honest size inside a WebView with system bars; the
@@ -62,7 +58,7 @@ function applySize(): void {
   const vv = window.visualViewport;
   const width = Math.round(vv?.width ?? window.innerWidth);
   const height = Math.round(vv?.height ?? window.innerHeight);
-  game.resize(width, height, window.devicePixelRatio || 1);
+  app.resize(width, height, window.devicePixelRatio || 1);
 }
 
 applySize();
@@ -73,19 +69,21 @@ window.visualViewport?.addEventListener('resize', applySize);
 // delivers one enormous frame delta and the loop spends its sub-step budget
 // catching up on time the player wasn't there for.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) game.stop();
-  else game.start();
+  if (document.hidden) app.stop();
+  else app.start();
 });
 
 const ready = new Promise<void>((resolve) => {
-  const off = game.events.on('ready', () => {
+  const off = app.events.on('ready', () => {
     off();
     resolve();
   });
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => game.events.emit('ready', { seed }));
+    requestAnimationFrame(() => app.events.emit('ready', { seed }));
   });
 });
 
-installTestApi(game, ready);
-game.start();
+const api = installTestApi(app, ready);
+if (params.get('look') === '0') api.setLookAheadEnabled(false);
+
+app.start();

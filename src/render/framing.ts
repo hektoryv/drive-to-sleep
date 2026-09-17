@@ -1,65 +1,18 @@
 /**
- * Portrait framing.
+ * Portrait framing maths.
  *
- * The display is divided into four horizontal bands (docs/02-art-direction.md).
- * Only the aperture band — the windscreen — ever contains the 3D world; the
- * rest is the car. Everything about how the game is composed flows from this,
- * so the geometry is computed in exactly one place.
+ * The display is divided into four horizontal bands
+ * (docs/02-art-direction.md). Only the aperture band — the windscreen — ever
+ * contains the 3D world. Everything about how the game is composed flows from
+ * this, so the geometry is computed in exactly one place.
  *
- * Rectangles are in CSS pixels with y measured from the top of the display.
- * WebGL wants y from the bottom, so `toGlY` is provided rather than left for
- * each caller to get wrong.
+ * The resulting types live in `contracts/view.ts`, because the cockpit and the
+ * HUD both need to lay themselves out against these bands without importing
+ * the renderer.
  */
 
-import { VIEW } from '../sim/tuning.js';
-
-export interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/**
- * Per-run overrides for the authored framing constants.
- *
- * Framing is judged by eye against screenshots, and a sweep across several
- * settings in one run is far more useful than editing a constant and shooting
- * again. The harness drives these; the authored values in `VIEW` remain the
- * single source of truth for what the game actually ships with.
- */
-export interface FramingOverrides {
-  headerFraction?: number;
-  apertureFraction?: number;
-  dashFraction?: number;
-  hFov?: number;
-  horizonY?: number;
-}
-
-export interface Framing {
-  /** Display size in CSS pixels. */
-  width: number;
-  height: number;
-  /** Device pixel ratio actually in use (capped — see clampPixelRatio). */
-  pixelRatio: number;
-
-  header: Rect;
-  /** The windscreen. The 3D world is scissored to this and nothing else. */
-  aperture: Rect;
-  dash: Rect;
-  wheel: Rect;
-
-  /** Aperture aspect ratio (w/h). */
-  apertureAspect: number;
-  /** Vertical FOV in radians, derived from the horizontal FOV and the aperture. */
-  vFov: number;
-  /**
-   * Camera pitch offset in radians that places the horizon at VIEW.HORIZON_Y
-   * within the aperture. Positive pitches the camera up, which moves the
-   * horizon *down* the frame and leaves more sky above it.
-   */
-  horizonPitch: number;
-}
+import type { Framing, FramingOverrides, Rect } from '../contracts/view.js';
+import { VIEW } from './tuning.js';
 
 function rect(x: number, y: number, w: number, h: number): Rect {
   return { x, y, w, h };
@@ -107,9 +60,9 @@ export function toGlY(framing: Framing, r: Rect): number {
 }
 
 /**
- * Caps the device pixel ratio. Phones report 3–4; rendering a 3D scene at
- * 4× on a mid-range GPU is the single easiest way to miss the frame budget,
- * and at the sizes involved the visual difference is marginal.
+ * Caps the device pixel ratio. Phones report 3–4; rendering a 3D scene at 4×
+ * on a mid-range GPU is the single easiest way to miss the frame budget, and
+ * at these sizes the visual difference is marginal.
  */
 export function clampPixelRatio(raw: number, max = 2): number {
   return Math.min(raw, max);

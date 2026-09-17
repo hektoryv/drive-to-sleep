@@ -20,8 +20,19 @@ project up without guessing.
 
 ## The tuning rule
 
-> Every number that affects how the game feels or looks lives in
-> `sim/tuning.ts` or the biome parameter sets. Never inline in logic.
+> Every number that affects how the game feels or looks lives in its domain's
+> `tuning.ts` or in a biome parameter set. Never inline in logic.
+
+There is deliberately no single shared tuning file — a shared constants file is
+the most reliable merge conflict in a codebase worked on from several
+directions at once (ADR-0011). Each domain owns its own:
+
+| | |
+|---|---|
+| `src/sim/tuning.ts` | vehicle, attitude, simulation rate |
+| `src/world/tuning.ts` | road, events, terrain, time of day |
+| `src/render/tuning.ts` | framing, field of view, camera look-ahead |
+| `src/input/tuning.ts` | control radii, curves, deadzone |
 
 Because: tuning is iterative, tuning happens in a feedback loop with you
 looking at screenshots, and a constant buried on line 214 of `vehicle.ts` is a
@@ -30,15 +41,14 @@ saying what it does and which direction makes it feel *more* of something.
 
 ## Layering
 
-```
-core  ←  input, sim, world, render, cockpit, ui, fx
-sim   ←  render, ui        (render reads sim; sim never sees render)
-world ←  sim, render
-```
+Two rules, both enforced by ESLint rather than by good intentions:
 
-`sim/` and `world/` import **nothing** from `render/`, `cockpit/`, `ui/`, or
-three.js. Enforced by an ESLint `no-restricted-imports` rule, not by good
-intentions.
+1. **No domain imports another domain.** They import `core/` and `contracts/`;
+   `app/` wires them together at runtime.
+2. **`sim/` and `world/gen/` import no three.js and touch no DOM.**
+
+See [06-modules.md](06-modules.md) for the ownership map and how to work
+inside one domain, and ADR-0011 for why it is shaped this way.
 
 ## Naming
 

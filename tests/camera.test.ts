@@ -5,8 +5,8 @@ import {
   resetLookAhead,
   updateLookAhead,
 } from '../src/render/camera.js';
-import { CAMERA } from '../src/sim/tuning.js';
-import { pathHeading } from '../src/world/placeholder-path.js';
+import { CAMERA } from '../src/render/tuning.js';
+import { createRoad } from '../src/world/gen/road-query.js';
 
 const DT = 1 / 120;
 
@@ -88,27 +88,31 @@ describe('look-ahead rig', () => {
     expect(rig.yaw).toBe(0);
   });
 
-  it('leads the car through a real corner on the placeholder path', () => {
-    // Drive the sharpest corner the placeholder road has and check the view is
-    // actually turned into it, rather than trailing behind the car.
-    const rig = makeLookAheadRig();
+  it('leads the car along the real generated road', () => {
+    // Drive several kilometres of actual road and check the view is turned
+    // into the corners rather than trailing behind the car.
+    const road = createRoad(4);
     const speed = 110 / 3.6;
-    let s = 700;
+    road.ensureSpan(0);
+    const rig = makeLookAheadRig();
+    let s = 0;
     let leading = 0;
     let samples = 0;
-    for (let i = 0; i < 1200; i++) {
+    for (let i = 0; i < 30000; i++) {
       s += speed * DT;
-      const here = pathHeading(s);
-      const ahead = pathHeading(s + lookAheadDistance(speed));
+      road.ensureSpan(s);
+      const here = road.headingAt(s);
+      const ahead = road.headingAt(s + lookAheadDistance(speed));
       updateLookAhead(rig, here, ahead, DT);
       const toAhead = ahead - here;
-      if (Math.abs(toAhead) > 1e-3) {
+      // Only judge where the road is meaningfully turning; near an inflection
+      // the sign flips and a smoothed camera is legitimately behind it.
+      if (Math.abs(toAhead) > 0.02) {
         samples++;
         if (Math.sign(rig.yaw) === Math.sign(toAhead)) leading++;
       }
     }
-    expect(samples).toBeGreaterThan(500);
-    // Allow a few frames of lag where the road's curvature changes sign.
+    expect(samples).toBeGreaterThan(1000);
     expect(leading / samples).toBeGreaterThan(0.9);
   });
 });

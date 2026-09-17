@@ -15,7 +15,7 @@
  * make the whole cabin rotate and look like nothing at all.
  */
 
-import { CAMERA } from '../sim/tuning.js';
+import { CAMERA } from './tuning.js';
 import { approach, clamp, wrapAngle } from '../core/math.js';
 
 export interface LookAheadRig {

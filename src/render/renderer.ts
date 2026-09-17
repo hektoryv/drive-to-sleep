@@ -9,38 +9,9 @@
  */
 
 import * as THREE from 'three';
-import { VIEW } from '../sim/tuning.js';
-import {
-  clampPixelRatio,
-  computeFraming,
-  toGlY,
-  type Framing,
-  type FramingOverrides,
-} from './framing.js';
-
-/** What the renderer needs from the simulation each frame. Read-only to it. */
-export interface ViewState {
-  /** Eye position in world space, metres. */
-  x: number;
-  z: number;
-  /** Heading in radians. 0 looks down -Z. Where the *car* points. */
-  heading: number;
-  /**
-   * Look-ahead yaw offset, radians (ADR-0010). Applied to the camera only —
-   * never folded into `heading`, because from Phase 4 the cockpit geometry
-   * rides on `heading` and must stay put while the driver's head turns.
-   */
-  lookYaw: number;
-  /** Body attitude, radians. Roll is positive leaning right. */
-  roll: number;
-  pitch: number;
-  /** Body heave, metres, added to eye height. */
-  heaveY: number;
-}
-
-export function makeViewState(): ViewState {
-  return { x: 0, z: 0, heading: 0, lookYaw: 0, roll: 0, pitch: 0, heaveY: 0 };
-}
+import { TONEMAP_EXPOSURE, VIEW } from './tuning.js';
+import { clampPixelRatio, computeFraming, toGlY } from './framing.js';
+import type { Framing, FramingOverrides, ViewState } from '../contracts/view.js';
 
 export interface Renderer {
   readonly canvas: HTMLCanvasElement;
@@ -50,7 +21,7 @@ export interface Renderer {
   resize(width: number, height: number, rawPixelRatio: number): void;
   /** Replaces the framing overrides and re-derives the projection. */
   setFramingOverrides(overrides: FramingOverrides): void;
-  render(scene: THREE.Scene, view: ViewState): void;
+  render(scene: THREE.Scene, view: Readonly<ViewState>): void;
   dispose(): void;
 }
 
@@ -73,7 +44,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   // between "looks like a game" and "looks good", and retro-fitting it later
   // would invalidate every colour choice made before it.
   gl.toneMapping = THREE.ACESFilmicToneMapping;
-  gl.toneMappingExposure = 1.15;
+  gl.toneMappingExposure = TONEMAP_EXPOSURE;
   gl.outputColorSpace = THREE.SRGBColorSpace;
 
   const camera = new THREE.PerspectiveCamera(50, 1, VIEW.NEAR_PLANE, VIEW.FAR_PLANE);
@@ -96,14 +67,14 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     camera.updateProjectionMatrix();
   }
 
-  function render(scene: THREE.Scene, view: ViewState): void {
+  function render(scene: THREE.Scene, view: Readonly<ViewState>): void {
     // The eye sits left of centre in a left-hand-drive car, offset along the
     // car's own right axis rather than the world's.
     const sin = Math.sin(view.heading);
     const cos = Math.cos(view.heading);
     camera.position.set(
       view.x + VIEW.EYE_LATERAL * cos,
-      VIEW.EYE_HEIGHT + view.heaveY,
+      view.y + VIEW.EYE_HEIGHT + view.heaveY,
       view.z - VIEW.EYE_LATERAL * sin,
     );
     // horizonPitch is framing, not motion: it places the horizon within the

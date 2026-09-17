@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createEventBus } from '../src/core/events.js';
+import type { GameEventMap } from '../src/contracts/events.js';
 
 describe('event bus', () => {
   it('delivers to listeners', () => {
-    const bus = createEventBus();
+    const bus = createEventBus<GameEventMap>();
     const seen: number[] = [];
     bus.on('kilometre', (p) => seen.push(p.km));
     bus.emit('kilometre', { km: 3 });
@@ -12,7 +13,7 @@ describe('event bus', () => {
   });
 
   it('unsubscribes via the returned handle', () => {
-    const bus = createEventBus();
+    const bus = createEventBus<GameEventMap>();
     let count = 0;
     const off = bus.on('kilometre', () => count++);
     bus.emit('kilometre', { km: 1 });
@@ -22,12 +23,12 @@ describe('event bus', () => {
   });
 
   it('ignores emits with no listeners', () => {
-    const bus = createEventBus();
+    const bus = createEventBus<GameEventMap>();
     expect(() => bus.emit('overtake', { totalOvertakes: 1 })).not.toThrow();
   });
 
   it('keeps event types independent', () => {
-    const bus = createEventBus();
+    const bus = createEventBus<GameEventMap>();
     let km = 0;
     let overtakes = 0;
     bus.on('kilometre', () => km++);
@@ -38,7 +39,7 @@ describe('event bus', () => {
   });
 
   it('survives a listener removing itself during dispatch', () => {
-    const bus = createEventBus();
+    const bus = createEventBus<GameEventMap>();
     const seen: string[] = [];
     const off = bus.on('kilometre', () => {
       seen.push('first');

@@ -1,7 +1,8 @@
 # Working agreement — Drive to Sleep
 
-Read this first. Then [docs/04-roadmap.md](docs/04-roadmap.md) to see where we
-are, and [docs/TODO.md](docs/TODO.md) for what's next.
+Read this first, then [docs/06-modules.md](docs/06-modules.md) if you are
+working inside one domain. [docs/04-roadmap.md](docs/04-roadmap.md) says where
+we are; [docs/TODO.md](docs/TODO.md) says what's next.
 
 ## What this project is
 
@@ -14,15 +15,22 @@ Full context: [docs/00-vision.md](docs/00-vision.md).
 
 ## Non-negotiables
 
-1. **`sim/` and `world/` never import from `render/`, `cockpit/`, `ui/`, or
-   three.js.** This is the load-bearing architectural rule. See ADR-0002.
-2. **The simulation runs at a fixed 120 Hz.** Never tie physics to frame rate.
-3. **No allocation in the hot path.** Pre-allocate, pool, write in place.
-4. **Every feel/look constant lives in `sim/tuning.ts`** or a biome parameter
-   set, with a comment. Never inline in logic.
-5. **No audio, ever.** It's a design decision, not an omission.
-6. **No badges, marques or model names on the car.** It's "a 70s sports car".
-7. **No network, no analytics, no ads, no IAP, no permissions.**
+1. **No domain imports another domain.** `world/`, `sim/`, `input/`, `render/`,
+   `cockpit/`, `ui/` and `fx/` are sealed. They talk through `contracts/`, and
+   `app/` wires them. This is what lets several people work at once without
+   breaking each other (ADR-0011).
+2. **`sim/` and `world/gen/` never import three.js or touch the DOM.** They
+   must run in plain Node (ADR-0002).
+3. **The simulation runs at a fixed 120 Hz.** Never tie physics to frame rate.
+4. **No allocation in the hot path.** Pre-allocate, pool, write in place.
+5. **Every feel/look constant lives in its domain's `tuning.ts`**, with a
+   comment saying which direction makes it more of something. Never inline.
+6. **No audio, ever.** It's a design decision, not an omission.
+7. **No badges, marques or model names on the car.** It's "a 70s sports car".
+8. **No network, no analytics, no ads, no IAP, no permissions.**
+
+Rules 1 and 2 are checked by `npm run lint`. The architecture *is* the lint
+config; the documentation describes it.
 
 ## Documentation discipline
 
@@ -39,6 +47,15 @@ part of every task, not a separate chore:
   PROGRESS.md. Handling is tuned by memory; that log is the memory.
 
 Full conventions: [docs/05-conventions.md](docs/05-conventions.md).
+
+## Working inside a domain
+
+Work in `src/<domain>/` and `tests/`. You should not need to touch anything
+else. If you need something from another domain you need a **contract**, not an
+import — add it to `src/contracts/`, note it in PROGRESS.md, move on.
+
+The three shared files, and the only places that need coordination:
+`src/contracts/*`, the `Services` interface, and `src/app/modules.ts`.
 
 ## Working rhythm
 

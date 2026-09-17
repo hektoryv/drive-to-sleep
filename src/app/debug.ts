@@ -8,7 +8,7 @@
  */
 
 import type { LoopStats } from '../core/loop.js';
-import type { Framing } from './framing.js';
+import type { Framing } from '../contracts/view.js';
 
 export interface DebugOverlay {
   readonly element: HTMLElement;
@@ -17,7 +17,12 @@ export interface DebugOverlay {
   /** Adds or updates an arbitrary named value in the panel. */
   watch(key: string, value: string | number): void;
   /** Called every frame; throttles its own DOM writes. */
-  update(stats: Readonly<LoopStats>, info: { drawCalls: number; triangles: number }, framing: Framing): void;
+  update(
+    stats: Readonly<LoopStats>,
+    info: { drawCalls: number; triangles: number },
+    framing: Framing,
+    moduleTimings?: ReadonlyMap<string, number>,
+  ): void;
   dispose(): void;
 }
 
@@ -73,7 +78,12 @@ export function createDebugOverlay(parent: HTMLElement): DebugOverlay {
     horizon.style.top = `${ap.y + ap.h * fromTop}px`;
   }
 
-  function redraw(stats: Readonly<LoopStats>, info: { drawCalls: number; triangles: number }, framing: Framing): void {
+  function redraw(
+    stats: Readonly<LoopStats>,
+    info: { drawCalls: number; triangles: number },
+    framing: Framing,
+    moduleTimings: ReadonlyMap<string, number> | undefined,
+  ): void {
     const lines = [
       `${stats.fps.toFixed(0).padStart(3)} fps   ${stats.frameMs.toFixed(2)} ms`,
       `sim    ${stats.simMs.toFixed(2)} ms  (${stats.stepsLastFrame} steps)`,
@@ -85,6 +95,14 @@ export function createDebugOverlay(parent: HTMLElement): DebugOverlay {
       `hfov   ${((framing.vFov * 180) / Math.PI).toFixed(1)}° v`,
     ].filter((l) => l !== '');
 
+    // Per-module step cost. With domains owned by different people, "which
+    // module got slower" is the first question worth being able to answer.
+    if (moduleTimings !== undefined && moduleTimings.size > 0) {
+      lines.push('');
+      for (const [name, ms] of moduleTimings) lines.push(`${name.padEnd(6)} ${ms.toFixed(3)} ms`);
+    }
+
+    if (watched.size > 0) lines.push('');
     for (const [k, v] of watched) lines.push(`${k.padEnd(6)} ${v}`);
     panel.textContent = lines.join('\n');
   }
@@ -101,13 +119,13 @@ export function createDebugOverlay(parent: HTMLElement): DebugOverlay {
     watch(key: string, value: string | number) {
       watched.set(key, typeof value === 'number' ? value.toFixed(2) : value);
     },
-    update(stats, info, framing) {
+    update(stats, info, framing, moduleTimings) {
       if (!visible) return;
       layoutGuides(framing);
       sinceRefresh += stats.frameMs / 1000;
       if (sinceRefresh < REFRESH_INTERVAL_S) return;
       sinceRefresh = 0;
-      redraw(stats, info, framing);
+      redraw(stats, info, framing, moduleTimings);
     },
     dispose() {
       root.remove();

@@ -34,31 +34,36 @@ See [PROGRESS.md](PROGRESS.md) for what it cost and what it caught.
 
 ---
 
-## Phase 1 — The road *(current)*
+## Phase 1 — The road ✅ *complete 2026-09-17*
 
 **Goal:** an endless, believable road you can fly along.
 
-- [ ] Curvature / grade / width fields over `s`
-- [ ] Station sampling and the `(s,t) ↔ world` conversions
-- [ ] Chunk ring buffer with in-place recycling
-- [ ] Road mesh sweep: surface, shoulder, verge, centre line, edge lines
-- [ ] Banking derived from curvature
-- [ ] Event injection: hairpin, sweeper, crest, straight-with-a-view
-- [ ] Terrain ribbons either side
-- [ ] Free-fly debug camera + station/curvature visualisation
-- [ ] Determinism test, chunk-recycling test
+- [x] Curvature / grade / width fields over `s`
+- [x] Station sampling and the `(s,t) ↔ world` conversions
+- [x] Chunk ring buffer with in-place recycling
+- [x] Road mesh sweep: surface, shoulder, verge, centre line, edge lines
+- [x] Banking derived from curvature
+- [x] Event injection: hairpin, sweeper, crest, dip, straight
+- [x] Terrain ribbons either side
+- [x] Determinism test, ring-buffer recycling test, resume-equivalence test
+- [ ] Free-fly debug camera + station/curvature visualisation — *deferred; the
+      sequence shots covered what it was for, and Phase 2 needs a chase camera
+      anyway, so it is folded into that*
 
-**Exit:** fly 20 km along the road on one seed with no seams, no hitches, no
-allocations after the first second, and screenshots that show a road you'd
-actually want to drive.
+**Exit: met.** 20 km on one seed with no seams, deterministic geometry, no
+reallocation after construction, and a hairpin that reads as a hairpin.
 
-**Watch out for:** curvature noise that produces a road with no rhythm — all
-medium corners, no straights, no drama. If that happens, it's the event system
-that needs work, not the noise.
+**The warning came true, from the other side.** The roadmap predicted "all
+medium corners, no straights". Measured, raw noise gave the opposite: 57% of
+the road straighter than a 1.6 km radius, because fbm spends most of its time
+near zero. Same failure — no rhythm — and the fix was a shaping exponent on the
+noise rather than more events. See PROGRESS.md.
 
 ---
 
-## Phase 2 — The drive
+## Phase 2 — The drive *(current)*
+
+---
 
 **Goal:** the car feels good. This is the most important phase in the project.
 

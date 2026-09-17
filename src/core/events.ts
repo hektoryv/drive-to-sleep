@@ -1,48 +1,36 @@
 /**
- * A tiny typed event bus.
+ * A tiny typed event bus, generic over an event map.
  *
- * Exists so the simulation can announce things ("you overtook a car", "you hit
- * something") without knowing that a renderer, a HUD or a particle system
- * exists — which is the sim/render separation from ADR-0002 in practice.
+ * Exists so one domain can announce something without knowing which other
+ * domains care — the sim says "you overtook a car" and has no idea whether a
+ * HUD, a particle system, both or neither is listening (ADR-0011).
  *
- * Emitting allocates nothing: payloads are passed as a single object the
- * caller owns and may reuse, and listeners are stored in plain arrays.
- * Listeners must therefore not retain the payload past the call.
+ * The game's event vocabulary lives in `contracts/events.ts`, not here.
+ *
+ * Emitting allocates nothing: payloads are passed as a single object the caller
+ * owns and may reuse, and listeners live in plain arrays. Listeners must
+ * therefore not retain a payload past the call.
  */
 
-export interface GameEventMap {
-  /** Fired once when the world is ready and the first frame can be drawn. */
-  ready: { seed: number };
-  /** The player passed a traffic car. */
-  overtake: { totalOvertakes: number };
-  /** Contact with another vehicle. `closingSpeed` is in m/s. */
-  collision: { closingSpeed: number };
-  /** Wheels left or regained tarmac. */
-  surfaceChange: { onRoad: boolean };
-  /** Crossed a whole-kilometre boundary. */
-  kilometre: { km: number };
-}
+export type Listener<T> = (payload: T) => void;
 
-export type EventName = keyof GameEventMap;
-export type Listener<K extends EventName> = (payload: GameEventMap[K]) => void;
-
-export interface EventBus {
-  on<K extends EventName>(name: K, fn: Listener<K>): () => void;
-  off<K extends EventName>(name: K, fn: Listener<K>): void;
-  emit<K extends EventName>(name: K, payload: GameEventMap[K]): void;
+export interface EventBus<M> {
+  on<K extends keyof M>(name: K, fn: Listener<M[K]>): () => void;
+  off<K extends keyof M>(name: K, fn: Listener<M[K]>): void;
+  emit<K extends keyof M>(name: K, payload: M[K]): void;
   clear(): void;
 }
 
-export function createEventBus(): EventBus {
+export function createEventBus<M>(): EventBus<M> {
   // One array per event name, created lazily and then reused forever.
   // Slots are nulled rather than spliced while a dispatch is in progress:
   // splicing mid-dispatch shifts the remaining listeners down and silently
   // skips the one after the listener that removed itself.
-  const listeners = new Map<EventName, Array<Listener<EventName> | null>>();
+  const listeners = new Map<keyof M, Array<Listener<never> | null>>();
   let dispatchDepth = 0;
   let needsCompaction = false;
 
-  function listFor(name: EventName): Array<Listener<EventName> | null> {
+  function listFor(name: keyof M): Array<Listener<never> | null> {
     let list = listeners.get(name);
     if (list === undefined) {
       list = [];
@@ -60,15 +48,15 @@ export function createEventBus(): EventBus {
     needsCompaction = false;
   }
 
-  const bus: EventBus = {
+  const bus: EventBus<M> = {
     on(name, fn) {
-      listFor(name).push(fn as Listener<EventName>);
+      listFor(name).push(fn as Listener<never>);
       return () => bus.off(name, fn);
     },
     off(name, fn) {
       const list = listeners.get(name);
       if (list === undefined) return;
-      const i = list.indexOf(fn as Listener<EventName>);
+      const i = list.indexOf(fn as Listener<never>);
       if (i < 0) return;
       if (dispatchDepth > 0) {
         list[i] = null;
@@ -85,7 +73,7 @@ export function createEventBus(): EventBus {
       // reached, and nulls are skipped so one removed during dispatch is not.
       for (let i = 0; i < list.length; i++) {
         const fn = list[i];
-        if (fn !== null && fn !== undefined) (fn as Listener<typeof name>)(payload);
+        if (fn !== null && fn !== undefined) (fn as Listener<M[typeof name]>)(payload);
       }
       dispatchDepth--;
       if (dispatchDepth === 0 && needsCompaction) compact();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampPixelRatio, computeFraming, toGlY } from '../src/render/framing.js';
-import { VIEW } from '../src/sim/tuning.js';
+import { VIEW } from '../src/render/tuning.js';
 
 /** A representative spread of phone sizes, portrait. */
 const SCREENS: Array<[number, number]> = [

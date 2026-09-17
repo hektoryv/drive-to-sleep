@@ -9,9 +9,13 @@ No sound.
 
 ## Status
 
-**Phase 0 complete.** The toolchain, the fixed-step loop, the seeded noise, the
-portrait framing and the screenshot harness are in and tested. The world itself
-is a placeholder grid — Phase 1 builds the road.
+**Phase 1 complete.** The road generates: curvature, grade and width as noise
+fields over distance with hairpins, sweepers and crests injected on top, swept
+into geometry with terrain either side. The codebase is split into sealed
+domains so it can be worked on from several directions at once
+([docs/06-modules.md](docs/06-modules.md)).
+
+Phase 2 is next, and it's the one that matters: making the car feel good.
 
 ```
 npm install
@@ -19,6 +23,8 @@ npm run dev                                   # play it in a browser
 npm test                                      # 49 tests
 npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
 npm run shoot -- --sheet                      # contact sheet
+npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner
+npm run lint                                  # also checks the architecture
 ```
 
 ## Where things are
@@ -31,6 +37,7 @@ npm run shoot -- --sheet                      # contact sheet
 | [docs/03-architecture.md](docs/03-architecture.md) | Module map, coordinate systems, data flow, budgets |
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases, tasks, exit criteria |
 | [docs/05-conventions.md](docs/05-conventions.md) | Code style, tuning policy, testing, definition of done |
+| [docs/06-modules.md](docs/06-modules.md) | Domain ownership, module lifecycle, working in parallel |
 | [docs/decisions/](docs/decisions/) | Locked decisions, one file each, with the reasoning |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Append-only log of what actually happened |
 | [docs/TODO.md](docs/TODO.md) | Live backlog |
