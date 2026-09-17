@@ -13,27 +13,28 @@ beautiful scene is driving badly.
 
 ---
 
-## Phase 0 — Foundation *(current)*
+## Phase 0 — Foundation ✅ *complete 2026-09-17*
 
 **Goal:** a repo that builds, runs, and can be looked at.
 
 - [x] Decisions locked and written as ADRs
 - [x] Documentation structure
-- [ ] Vite + TypeScript + strict config, ESLint with the `sim ↛ render` rule
-- [ ] Vitest wired up
-- [ ] Canvas, resize handling, portrait framing scaffold
-- [ ] Fixed-step loop with interpolation (`core/loop.ts`)
-- [ ] Seeded RNG + noise (`core/rng.ts`)
-- [ ] Debug overlay: fps, frame time, sim time, arbitrary watch values
-- [ ] Screenshot harness (`tools/shoot.ts`) — Playwright, drives a seed to a
+- [x] Vite + TypeScript + strict config, ESLint with the `sim ↛ render` rule
+- [x] Vitest wired up
+- [x] Canvas, resize handling, portrait framing scaffold
+- [x] Fixed-step loop with interpolation (`core/loop.ts`)
+- [x] Seeded RNG + noise (`core/rng.ts`)
+- [x] Debug overlay: fps, frame time, sim time, arbitrary watch values
+- [x] Screenshot harness (`tools/shoot.ts`) — Playwright, drives a seed to a
       given distance, writes a PNG. This is how you see the game.
 
-**Exit:** `npm run shoot -- --seed 1 --at 500` produces a PNG of *something*,
-and the debug overlay shows a stable 60 fps.
+**Exit: met.** `npm run shoot -- --seed 1 --at 500` produces a PNG, `--sheet`
+produces a contact sheet, and the framing guides land on the rendered horizon.
+See [PROGRESS.md](PROGRESS.md) for what it cost and what it caught.
 
 ---
 
-## Phase 1 — The road
+## Phase 1 — The road *(current)*
 
 **Goal:** an endless, believable road you can fly along.
 

@@ -9,7 +9,17 @@ No sound.
 
 ## Status
 
-**Phase 0 — planning.** No code yet. The plan is the deliverable.
+**Phase 0 complete.** The toolchain, the fixed-step loop, the seeded noise, the
+portrait framing and the screenshot harness are in and tested. The world itself
+is a placeholder grid — Phase 1 builds the road.
+
+```
+npm install
+npm run dev                                   # play it in a browser
+npm test                                      # 49 tests
+npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
+npm run shoot -- --sheet                      # contact sheet
+```
 
 ## Where things are
 

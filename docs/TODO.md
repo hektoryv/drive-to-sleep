@@ -5,22 +5,7 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 
 ---
 
-## Now — Phase 0: Foundation
-
-- [ ] `package.json`, Vite, TypeScript strict, `tsconfig`
-- [ ] ESLint + the `sim ↛ render` layering rule
-- [ ] Vitest wired up, one passing test
-- [ ] `index.html`, canvas, portrait framing scaffold, resize handling
-- [ ] `core/loop.ts` — fixed 120 Hz accumulator + render interpolation alpha
-- [ ] `core/math.ts` — vec2/vec3, spring-damper, easing, clamp, lerp
-- [ ] `core/rng.ts` — seeded PRNG, value noise, gradient noise, fbm
-- [ ] `core/events.ts`, `core/storage.ts`
-- [ ] `render/debug.ts` — fps / frame time / sim time / watch values overlay
-- [ ] `tools/shoot.ts` — Playwright screenshot harness (seed, distance, time,
-      output dir, contact sheet mode)
-- [ ] `npm run perf` skeleton
-
-## Next — Phase 1: The road
+## Now — Phase 1: The road
 
 - [ ] Curvature / grade / width fields over `s`
 - [ ] Station sampling; `(s,t) ↔ world` conversions in one place
@@ -31,6 +16,11 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 - [ ] Terrain ribbons
 - [ ] Free-fly debug camera, station/curvature visualisation
 - [ ] Tests: determinism, chunk recycling, no-allocation
+- [ ] Delete `src/render/placeholder-scene.ts` once the real world replaces it
+
+## Next — Phase 2: The drive
+
+Pulled in when Phase 1 exits. See the [roadmap](04-roadmap.md).
 
 ## Later
 
@@ -55,10 +45,36 @@ Things to resolve before the phase that needs them:
 - **Resume-point semantics** (Phase 5): resume at the exact distance, or at the
   start of the current biome? Exact is more continuous; biome-start avoids
   dropping you mid-hairpin on a cold open.
+- **Aperture height** (Phase 4): 38% reads well against a placeholder, but the
+  cabin is 57% of the display and currently empty black. Re-judge once there is
+  real dash and wheel geometry to fill it — the band may want to grow or shrink
+  a few points. Framing can now be retuned freely without touching handling
+  (ADR-0009).
+- **Startup sub-step drops** (Phase 6): the loop reports a handful of dropped
+  frames during page load and warp, when deltas are long. Harmless now; worth
+  confirming it doesn't happen mid-drive on a real device.
 
 ## Done
 
-Nothing yet — Phase 0 implementation hasn't started.
+<details>
+<summary>Phase 0 — Foundation (2026-09-17)</summary>
+
+- [x] `package.json`, Vite, TypeScript strict, `tsconfig`
+- [x] ESLint + the `sim ↛ render` layering rule, enforced
+- [x] Vitest wired up — 49 tests passing
+- [x] `index.html`, canvas, portrait framing scaffold, resize handling
+- [x] `core/loop.ts` — fixed 120 Hz accumulator, interpolation, sub-step cap,
+      deterministic `advance()`
+- [x] `core/math.ts` — spring-damper, easing, allocation-free vectors
+- [x] `core/rng.ts` — seeded streams, value/gradient/ridged noise, fbm
+- [x] `core/events.ts`, `core/storage.ts`
+- [x] `render/framing.ts`, `render/renderer.ts`, `render/debug.ts`
+- [x] `sim/tuning.ts` — the single home for feel and look constants
+- [x] `tools/shoot.ts` — single shots and contact sheets
+- [x] `tools/perf.ts` — frame-time percentiles
+- [x] ADR-0009 after the framing figures turned out to be wrong
+
+</details>
 
 <details>
 <summary>Planning (2026-09-17)</summary>

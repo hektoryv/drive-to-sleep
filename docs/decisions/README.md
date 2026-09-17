@@ -11,6 +11,7 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0003](ADR-0003-hybrid-rendering.md) | Hybrid 3D road / 2.5D scenery | Accepted |
 | [0004](ADR-0004-one-finger-control.md) | Position-mapped one-finger control | Accepted |
 | [0005](ADR-0005-traffic-and-stakes.md) | Same-direction traffic, soft collisions, no fail state | Accepted |
-| [0006](ADR-0006-portrait-and-world.md) | Portrait cockpit; seamless biome and time drift | Accepted |
+| [0006](ADR-0006-portrait-and-world.md) | Portrait cockpit; seamless biome and time drift | Accepted (framing figures superseded by 0009) |
 | [0007](ADR-0007-art-direction.md) | Stylised low-poly with a detailed 70s interior | Accepted |
 | [0008](ADR-0008-dev-feedback-loop.md) | Screenshot-first development loop | Accepted |
+| [0009](ADR-0009-horizontal-fov.md) | FOV authored horizontally; aperture proportions corrected | Accepted |
