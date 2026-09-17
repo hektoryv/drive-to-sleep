@@ -35,13 +35,14 @@ horizon, so the framing is designed rather than inherited:
 │ ░ mirror  dist ░│   5%   header strip: rear-view mirror, distance readout
 ├─────────────────┤
 │                 │
-│    the world    │  38%   THE WINDSCREEN — the only band the 3D world is
-│   ╲         ╱   │        drawn into. ~1.2:1 on a typical phone. A-pillars
-│    ╲_______╱    │        cut the top corners. Composed like a picture.
+│                 │
+│    the world    │  46%   THE WINDSCREEN — the only band the 3D world is
+│   ╲         ╱   │        drawn into. Roughly square on a typical phone.
+│    ╲_______╱    │        A-pillars cut the top corners.
 ├─────────────────┤
-│  ○   ◉   ○      │  22%   dash top + five-dial binnacle, big tach centre
+│  ○   ◉   ○      │  15%   dash top + five-dial binnacle, big tach centre
 ├─────────────────┤
-│    ╭───────╮    │  35%   the wheel — rim crosses the lower screen, hub and
+│    ╭───────╮    │  34%   the wheel — rim crosses the lower screen, hub and
 │    │   ╳   │    │        spokes visible, bottom of the rim off-screen
 └────┴───────┴────┘
 ```
@@ -51,18 +52,23 @@ against the real cockpit geometry.
 
 Key decisions that make this work:
 
-- **The aperture is a wide window, and that's correct.** A 911's screen is
-  wide and shallow. Cropping the world to a band a little wider than it is
-  tall is both true to the car and the best use of portrait — it gives the
-  landscape a frame instead of a tall thin slot. The cabin takes the other
-  57%, which sounds extreme until you look at the render: it reads as sitting
-  in a car, not as letterboxing.
-- **Field of view is specified horizontally (52°), not vertically.** See
-  ADR-0009. How far you can see into a corner must not change when the
-  aperture's proportions are retuned. Vertical FOV follows from the aperture
-  aspect and lands around 45° on a typical phone — narrower than a default
-  60°, which compresses the scene, keeps the horizon stable, makes distant
-  mountains read as large, and costs less to render.
+- **The windscreen gets the space; the dash gives it up.** The binnacle sits
+  *behind* the wheel in the real car, so the dials can overlap the top of the
+  wheel band rather than needing a tall strip of their own. That frees the
+  dash band down to 15% and hands the difference to the view, which is
+  pillar #2.
+- **Field of view is specified horizontally (72°), not vertically.** See
+  ADR-0009 for why horizontally. The value is deliberately exaggerated: a
+  physically honest FOV for a phone at arm's length is about 25°, which looks
+  like driving through a telescope and destroys any sense of speed. 72°
+  is where the road starts to move. Shot against 60° and 84° — 84° visibly
+  distorts at the frame edges and flattens the horizon, 60° is calmer but
+  reads slower.
+- **The view leads the car into corners** (ADR-0010). The camera yaws toward
+  the road ahead, so you look *through* a bend instead of at the outside of
+  it. Partway only — a view fully aligned with the road ahead would pin the
+  road to the centre of the frame and the corner would stop reading as a
+  corner.
 - **Horizon sits at 62% of the aperture height.** More sky than road. Sky is
   where the mood is. Implemented as a camera pitch offset, so it is free.
 - **The wheel's bottom is off-screen.** We see the top of the rim and the

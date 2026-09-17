@@ -41,22 +41,32 @@ export const VIEW = {
   /** Top strip: rear-view mirror and the distance readout. */
   HEADER_FRACTION: 0.05,
   /** The windscreen aperture — the only band the 3D world is drawn into. */
-  APERTURE_FRACTION: 0.38,
-  /** Dash top and the five-dial binnacle. */
-  DASH_FRACTION: 0.22,
+  APERTURE_FRACTION: 0.46,
+  /**
+   * Dash top and the five-dial binnacle. Deliberately shallow: in the real car
+   * the binnacle sits *behind* the wheel, so the dials can overlap the top of
+   * the wheel band rather than needing a tall strip of their own. Every point
+   * taken from here goes to the windscreen.
+   */
+  DASH_FRACTION: 0.15,
   /** The wheel. Its bottom runs off the screen; we see the top two-thirds. */
-  WHEEL_FRACTION: 0.35,
+  WHEEL_FRACTION: 0.34,
 
   /**
    * Horizontal field of view. Specified horizontally, not vertically, so that
    * changing the aperture's proportions never changes how far into a corner
-   * you can see — which is the property that matters for driving. Vertical FOV
-   * is derived from this and the aperture's aspect ratio.
+   * you can see — which is the property that matters for driving (ADR-0009).
+   * Vertical FOV is derived from this and the aperture's aspect ratio.
    *
-   * Larger = wider, more speed sensation, more distortion, less compression.
+   * Deliberately wider than a real windscreen subtends. A physically honest
+   * FOV on a phone held at arm's length is about 25°, which looks like driving
+   * through a telescope and kills all sense of speed. Exaggerating it is what
+   * makes the road move.
+   *
+   * Larger = wider, more speed sensation, more distortion at the frame edges.
    * Smaller = longer lens, mountains read as larger, calmer horizon.
    */
-  H_FOV: 52 * DEG,
+  H_FOV: 72 * DEG,
 
   /**
    * Where the horizon sits within the aperture, as a fraction from its top.
@@ -72,6 +82,40 @@ export const VIEW = {
 
   NEAR_PLANE: 0.1,
   FAR_PLANE: 4000,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Camera — ADR-0010. The view leans into corners ahead of the car.
+// ---------------------------------------------------------------------------
+
+export const CAMERA = {
+  /**
+   * How far down the road the camera looks, in metres: a fixed part plus a
+   * speed-proportional part. The speed term is what keeps the behaviour
+   * consistent — at 50 km/h and at 180 km/h you want to be looking the same
+   * number of *seconds* ahead, not the same number of metres.
+   */
+  LOOKAHEAD_BASE_M: 10,
+  LOOKAHEAD_TIME_S: 0.75,
+
+  /**
+   * Fraction of the angle to the road ahead that the view actually turns
+   * through. Deliberately not 1: turning the head fully into the corner would
+   * pin the road to the centre of the frame and destroy any sense of turning.
+   * Higher = more anticipation, corners easier to read, less sense of rotation.
+   */
+  FOLLOW_STRENGTH: 0.45,
+
+  /** Hard cap on the yaw offset. Beyond this you are looking out of the side window. */
+  MAX_YAW: 14 * DEG,
+
+  /**
+   * Exponential approach rate, per second. Deliberately an approach and not a
+   * spring: the attitude springs overshoot on purpose because overshoot reads
+   * as weight, but a camera that overshoots reads as motion sickness.
+   * Higher = snappier and more alert; lower = smoother and more sedate.
+   */
+  RESPONSE_RATE: 4.5,
 } as const;
 
 // ---------------------------------------------------------------------------

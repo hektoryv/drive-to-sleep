@@ -8,6 +8,7 @@
  */
 
 import type { Game } from './game.js';
+import type { FramingOverrides } from './render/framing.js';
 import type { PlaceholderTime } from './render/placeholder-scene.js';
 
 export interface TestApi {
@@ -18,6 +19,10 @@ export interface TestApi {
   /** PHASE 0: three fixed moods. Phase 3 replaces this with the real cycle. */
   setTime(time: PlaceholderTime): void;
   setDebugVisible(v: boolean): void;
+  /** Retunes the framing live, for sweep shots. */
+  setFramingOverrides(overrides: FramingOverrides): void;
+  /** Turns camera look-ahead off, for before/after comparison shots. */
+  setLookAheadEnabled(v: boolean): void;
   pause(): void;
   resume(): void;
   distanceM(): number;
@@ -44,6 +49,8 @@ export function installTestApi(game: Game, ready: Promise<void>): TestApi {
     warpTo: (d) => game.warpTo(d),
     setTime: (t) => game.setTime(t),
     setDebugVisible: (v) => game.setDebugVisible(v),
+    setFramingOverrides: (o) => game.setFramingOverrides(o),
+    setLookAheadEnabled: (v) => game.setLookAheadEnabled(v),
     pause: () => game.stop(),
     resume: () => game.start(),
     distanceM: () => game.distanceM(),

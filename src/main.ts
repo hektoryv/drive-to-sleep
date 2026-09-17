@@ -4,6 +4,7 @@
 
 import { createGame } from './game.js';
 import { installTestApi } from './test-api.js';
+import type { FramingOverrides } from './render/framing.js';
 import type { PlaceholderTime } from './render/placeholder-scene.js';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement | null;
@@ -19,8 +20,41 @@ const seed = Number(params.get('seed') ?? '1') || 1;
 const time = (params.get('time') ?? 'day') as PlaceholderTime;
 const debugVisible = params.get('debug') !== '0';
 
-const game = createGame({ canvas, overlayParent: overlay, seed, time });
+/**
+ * Framing overrides from the URL, so a sweep across several settings can be
+ * shot in one harness run. Degrees in, radians out — degrees are what a person
+ * types. The authored values in `VIEW` remain what the game ships with.
+ */
+function framingFromParams(): FramingOverrides {
+  const o: FramingOverrides = {};
+  const num = (k: string): number | undefined => {
+    const raw = params.get(k);
+    if (raw === null) return undefined;
+    const v = Number(raw);
+    return Number.isFinite(v) ? v : undefined;
+  };
+  const fov = num('fov');
+  if (fov !== undefined) o.hFov = (fov * Math.PI) / 180;
+  const aperture = num('aperture');
+  if (aperture !== undefined) o.apertureFraction = aperture;
+  const dash = num('dash');
+  if (dash !== undefined) o.dashFraction = dash;
+  const header = num('header');
+  if (header !== undefined) o.headerFraction = header;
+  const horizon = num('horizon');
+  if (horizon !== undefined) o.horizonY = horizon;
+  return o;
+}
+
+const game = createGame({
+  canvas,
+  overlayParent: overlay,
+  seed,
+  time,
+  framing: framingFromParams(),
+});
 game.setDebugVisible(debugVisible);
+game.setLookAheadEnabled(params.get('look') !== '0');
 
 function applySize(): void {
   // visualViewport is the honest size inside a WebView with system bars; the

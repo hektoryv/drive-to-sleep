@@ -13,6 +13,14 @@
 import { createLoop, type Loop } from './core/loop.js';
 import { createEventBus, type EventBus } from './core/events.js';
 import { SIM, TIME } from './sim/tuning.js';
+import { pathHeading, pathX } from './world/placeholder-path.js';
+import {
+  lookAheadDistance,
+  makeLookAheadRig,
+  updateLookAhead,
+  type LookAheadRig,
+} from './render/camera.js';
+import type { FramingOverrides } from './render/framing.js';
 import { createRenderer, makeViewState, type Renderer, type ViewState } from './render/renderer.js';
 import { createDebugOverlay, type DebugOverlay } from './render/debug.js';
 import {
@@ -26,6 +34,7 @@ export interface GameOptions {
   overlayParent: HTMLElement;
   seed?: number;
   time?: PlaceholderTime;
+  framing?: FramingOverrides;
 }
 
 export interface Game {
@@ -38,6 +47,9 @@ export interface Game {
   warpTo(distanceM: number): void;
   setTime(time: PlaceholderTime): void;
   setDebugVisible(v: boolean): void;
+  setFramingOverrides(overrides: FramingOverrides): void;
+  /** Turns camera look-ahead off, for before/after comparison shots. */
+  setLookAheadEnabled(v: boolean): void;
   resize(width: number, height: number, pixelRatio: number): void;
   start(): void;
   stop(): void;
@@ -55,7 +67,11 @@ export function createGame(options: GameOptions): Game {
   const scene: PlaceholderScene = createPlaceholderScene(options.time ?? 'day');
   const debug: DebugOverlay = createDebugOverlay(options.overlayParent);
 
+  if (options.framing !== undefined) renderer.setFramingOverrides(options.framing);
+
   const view: ViewState = makeViewState();
+  const rig: LookAheadRig = makeLookAheadRig();
+  let lookAheadEnabled = true;
 
   // Placeholder simulation state. Everything here is temporary.
   const state: { distanceM: number; speedMs: number; timePhase: number; lastKm: number } = {
@@ -69,6 +85,12 @@ export function createGame(options: GameOptions): Game {
     state.distanceM += state.speedMs * dt;
     state.timePhase = (state.timePhase + dt / TIME.CYCLE_SECONDS) % 1;
 
+    // The camera rig is stepped in the simulation, not the render, so its
+    // smoothing is frame-rate independent like everything else (ADR-0002).
+    const ahead = state.distanceM + lookAheadDistance(state.speedMs);
+    const target = lookAheadEnabled ? pathHeading(ahead) : pathHeading(state.distanceM);
+    updateLookAhead(rig, pathHeading(state.distanceM), target, dt);
+
     const km = Math.floor(state.distanceM / 1000);
     if (km > state.lastKm) {
       state.lastKm = km;
@@ -81,16 +103,18 @@ export function createGame(options: GameOptions): Game {
     // stays smooth when the display rate and the 120 Hz sim disagree.
     const shown = state.distanceM + state.speedMs * loop.stepDt * alpha;
 
-    view.x = 0;
+    view.x = pathX(shown);
     view.z = -shown;
-    view.heading = 0;
+    view.heading = pathHeading(shown);
+    view.lookYaw = rig.yaw;
 
     scene.follow(view.x, view.z);
     renderer.render(scene.scene, view);
 
     debug.watch('dist', `${(shown / 1000).toFixed(3)} km`);
     debug.watch('speed', `${(state.speedMs * 3.6).toFixed(0)} km/h`);
-    debug.watch('phase', state.timePhase);
+    debug.watch('head', `${((view.heading * 180) / Math.PI).toFixed(1)}°`);
+    debug.watch('look', `${((rig.yaw * 180) / Math.PI).toFixed(1)}°`);
     debug.update(loop.stats, renderer.info, renderer.framing);
   }
 
@@ -114,6 +138,10 @@ export function createGame(options: GameOptions): Game {
     },
     setTime: (time) => scene.setTime(time),
     setDebugVisible: (v) => debug.setVisible(v),
+    setFramingOverrides: (o) => renderer.setFramingOverrides(o),
+    setLookAheadEnabled: (v) => {
+      lookAheadEnabled = v;
+    },
     resize: (width, height, pixelRatio) => renderer.resize(width, height, pixelRatio),
     start: () => loop.start(),
     stop: () => loop.stop(),

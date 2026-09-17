@@ -20,6 +20,22 @@ export interface Rect {
   h: number;
 }
 
+/**
+ * Per-run overrides for the authored framing constants.
+ *
+ * Framing is judged by eye against screenshots, and a sweep across several
+ * settings in one run is far more useful than editing a constant and shooting
+ * again. The harness drives these; the authored values in `VIEW` remain the
+ * single source of truth for what the game actually ships with.
+ */
+export interface FramingOverrides {
+  headerFraction?: number;
+  apertureFraction?: number;
+  dashFraction?: number;
+  hFov?: number;
+  horizonY?: number;
+}
+
 export interface Framing {
   /** Display size in CSS pixels. */
   width: number;
@@ -49,18 +65,27 @@ function rect(x: number, y: number, w: number, h: number): Rect {
   return { x, y, w, h };
 }
 
-export function computeFraming(width: number, height: number, pixelRatio: number): Framing {
-  const headerH = height * VIEW.HEADER_FRACTION;
-  const apertureH = height * VIEW.APERTURE_FRACTION;
-  const dashH = height * VIEW.DASH_FRACTION;
-  // The wheel takes the remainder, so rounding never leaves a gap at the bottom.
-  const wheelH = height - headerH - apertureH - dashH;
+export function computeFraming(
+  width: number,
+  height: number,
+  pixelRatio: number,
+  overrides: FramingOverrides = {},
+): Framing {
+  const hFov = overrides.hFov ?? VIEW.H_FOV;
+  const horizonY = overrides.horizonY ?? VIEW.HORIZON_Y;
+
+  const headerH = height * (overrides.headerFraction ?? VIEW.HEADER_FRACTION);
+  const apertureH = height * (overrides.apertureFraction ?? VIEW.APERTURE_FRACTION);
+  const dashH = height * (overrides.dashFraction ?? VIEW.DASH_FRACTION);
+  // The wheel takes the remainder, so rounding never leaves a gap at the
+  // bottom and an override of any other band stays self-consistent.
+  const wheelH = Math.max(0, height - headerH - apertureH - dashH);
 
   const apertureAspect = apertureH > 0 ? width / apertureH : 1;
 
   // Horizontal FOV is the authored value; vertical follows from the aperture.
-  const vFov = 2 * Math.atan(Math.tan(VIEW.H_FOV / 2) / apertureAspect);
-  const horizonPitch = Math.atan((2 * VIEW.HORIZON_Y - 1) * Math.tan(vFov / 2));
+  const vFov = 2 * Math.atan(Math.tan(hFov / 2) / apertureAspect);
+  const horizonPitch = Math.atan((2 * horizonY - 1) * Math.tan(vFov / 2));
 
   return {
     width,

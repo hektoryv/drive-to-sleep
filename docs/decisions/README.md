@@ -15,3 +15,4 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0007](ADR-0007-art-direction.md) | Stylised low-poly with a detailed 70s interior | Accepted |
 | [0008](ADR-0008-dev-feedback-loop.md) | Screenshot-first development loop | Accepted |
 | [0009](ADR-0009-horizontal-fov.md) | FOV authored horizontally; aperture proportions corrected | Accepted |
+| [0010](ADR-0010-camera-look-ahead.md) | The view leads the car into corners | Accepted |

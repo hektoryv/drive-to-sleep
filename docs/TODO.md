@@ -16,7 +16,10 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 - [ ] Terrain ribbons
 - [ ] Free-fly debug camera, station/curvature visualisation
 - [ ] Tests: determinism, chunk recycling, no-allocation
-- [ ] Delete `src/render/placeholder-scene.ts` once the real world replaces it
+- [ ] Delete `src/render/placeholder-scene.ts` and `src/world/placeholder-path.ts`
+      (and `tests/placeholder-path.test.ts`) once the real world replaces them
+- [ ] Point the camera look-ahead at the real road's heading field instead of
+      the placeholder path — the rig itself needs no change
 
 ## Next — Phase 2: The drive
 
@@ -45,11 +48,24 @@ Things to resolve before the phase that needs them:
 - **Resume-point semantics** (Phase 5): resume at the exact distance, or at the
   start of the current biome? Exact is more continuous; biome-start avoids
   dropping you mid-hairpin on a cold open.
-- **Aperture height** (Phase 4): 38% reads well against a placeholder, but the
-  cabin is 57% of the display and currently empty black. Re-judge once there is
-  real dash and wheel geometry to fill it — the band may want to grow or shrink
-  a few points. Framing can now be retuned freely without touching handling
-  (ADR-0009).
+- **Aperture height and FOV** (Phase 4 / Phase 2): now 46% and 72°. Both were
+  chosen from stills against a placeholder. Re-judge the aperture once there is
+  real dash and wheel geometry to fill the cabin, and the FOV on a real device
+  at speed — neither is a thing a screenshot can settle.
+- **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
+  sequence of stills through one corner, which shows where the view ends up but
+  not how it gets there. Needs hands on a device.
+- **Velocity-aligned camera term** (Phase 2): once the car can slide, consider
+  adding a small term that follows the velocity vector as well as the road
+  ahead. Rejected for now as not solving the anticipation problem (ADR-0010),
+  but it is the right fix for how a slide reads.
+- **Near-road dominance** (Phase 4): at 72° with the taller aperture, the road
+  immediately in front fills the bottom of the windscreen. In a real 911 you
+  would be looking at the bonnet there. Expected to resolve itself when the
+  bonnet and scuttle exist — do not "fix" it by narrowing the FOV first.
+- **Distant road aliasing** (Phase 1): the placeholder road band speckles at
+  the vanishing point where it is thinner than a pixel. Real swept geometry
+  with proper mip-mapping should handle it; worth confirming it does.
 - **Startup sub-step drops** (Phase 6): the loop reports a handful of dropped
   frames during page load and warp, when deltas are long. Harmless now; worth
   confirming it doesn't happen mid-drive on a real device.

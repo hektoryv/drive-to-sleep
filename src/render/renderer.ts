@@ -10,15 +10,27 @@
 
 import * as THREE from 'three';
 import { VIEW } from '../sim/tuning.js';
-import { clampPixelRatio, computeFraming, toGlY, type Framing } from './framing.js';
+import {
+  clampPixelRatio,
+  computeFraming,
+  toGlY,
+  type Framing,
+  type FramingOverrides,
+} from './framing.js';
 
 /** What the renderer needs from the simulation each frame. Read-only to it. */
 export interface ViewState {
   /** Eye position in world space, metres. */
   x: number;
   z: number;
-  /** Heading in radians. 0 looks down -Z. */
+  /** Heading in radians. 0 looks down -Z. Where the *car* points. */
   heading: number;
+  /**
+   * Look-ahead yaw offset, radians (ADR-0010). Applied to the camera only —
+   * never folded into `heading`, because from Phase 4 the cockpit geometry
+   * rides on `heading` and must stay put while the driver's head turns.
+   */
+  lookYaw: number;
   /** Body attitude, radians. Roll is positive leaning right. */
   roll: number;
   pitch: number;
@@ -27,7 +39,7 @@ export interface ViewState {
 }
 
 export function makeViewState(): ViewState {
-  return { x: 0, z: 0, heading: 0, roll: 0, pitch: 0, heaveY: 0 };
+  return { x: 0, z: 0, heading: 0, lookYaw: 0, roll: 0, pitch: 0, heaveY: 0 };
 }
 
 export interface Renderer {
@@ -36,6 +48,8 @@ export interface Renderer {
   readonly framing: Framing;
   readonly info: { drawCalls: number; triangles: number; programs: number };
   resize(width: number, height: number, rawPixelRatio: number): void;
+  /** Replaces the framing overrides and re-derives the projection. */
+  setFramingOverrides(overrides: FramingOverrides): void;
   render(scene: THREE.Scene, view: ViewState): void;
   dispose(): void;
 }
@@ -65,11 +79,14 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const camera = new THREE.PerspectiveCamera(50, 1, VIEW.NEAR_PLANE, VIEW.FAR_PLANE);
   camera.rotation.order = 'YXZ';
 
+  let overrides: FramingOverrides = {};
+  let lastSize = { width: 1, height: 1, rawPixelRatio: 1 };
   let framing = computeFraming(1, 1, 1);
 
   function resize(width: number, height: number, rawPixelRatio: number): void {
+    lastSize = { width, height, rawPixelRatio };
     const pixelRatio = clampPixelRatio(rawPixelRatio);
-    framing = computeFraming(width, height, pixelRatio);
+    framing = computeFraming(width, height, pixelRatio, overrides);
 
     gl.setPixelRatio(pixelRatio);
     gl.setSize(width, height, false);
@@ -91,7 +108,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     );
     // horizonPitch is framing, not motion: it places the horizon within the
     // aperture and is constant for a given screen.
-    camera.rotation.set(framing.horizonPitch + view.pitch, view.heading, view.roll);
+    camera.rotation.set(
+      framing.horizonPitch + view.pitch,
+      view.heading + view.lookYaw,
+      view.roll,
+    );
 
     const ap = framing.aperture;
     const glY = toGlY(framing, ap);
@@ -120,6 +141,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       };
     },
     resize,
+    setFramingOverrides(next: FramingOverrides) {
+      overrides = next;
+      resize(lastSize.width, lastSize.height, lastSize.rawPixelRatio);
+    },
     render,
     dispose() {
       gl.dispose();

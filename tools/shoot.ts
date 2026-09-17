@@ -33,6 +33,15 @@ const device: Device = {
 };
 const debug = args.get('debug') === 'true' || args.get('debug') === '1';
 const sheet = args.get('sheet') === 'true';
+const compare = args.get('compare') === 'true';
+const sequence = args.get('sequence') === 'true';
+
+function optionalNumber(key: string): number | undefined {
+  const raw = args.get(key);
+  if (raw === undefined) return undefined;
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : undefined;
+}
 
 /** The matrix a contact sheet covers. Widens as the phases land. */
 const SHEET_MATRIX: ShotState[] = [
@@ -44,23 +53,85 @@ const SHEET_MATRIX: ShotState[] = [
   { seed: 3, at: 5000, time: 'dusk', debug: true },
 ];
 
+/**
+ * A sweep for judging the portrait framing by eye. Held at the same point on
+ * the same curve so only the framing differs between frames.
+ */
+const COMPARE_MATRIX: ShotState[] = [
+  { seed: 1, at: 780, time: 'day', debug: false, look: false, label: 'no look-ahead' },
+  { seed: 1, at: 780, time: 'day', debug: false, label: 'look-ahead on' },
+  { seed: 1, at: 780, time: 'day', debug: false, fov: 60, label: 'fov 60°' },
+  { seed: 1, at: 780, time: 'day', debug: false, fov: 72, label: 'fov 72° (current)' },
+  { seed: 1, at: 780, time: 'day', debug: false, fov: 84, label: 'fov 84°' },
+  { seed: 1, at: 780, time: 'day', debug: false, aperture: 0.38, dash: 0.22, label: 'old bands 38/22' },
+  { seed: 1, at: 780, time: 'day', debug: false, aperture: 0.46, dash: 0.15, label: 'new bands 46/15' },
+  { seed: 1, at: 780, time: 'day', debug: false, aperture: 0.54, dash: 0.1, label: 'bands 54/10' },
+];
+
+/**
+ * A run of frames through one stretch of road. Stills cannot show motion
+ * (ADR-0008), but a strip through a corner is the closest a screenshot loop
+ * gets: it shows what the view does as the road turns, which is exactly what
+ * the look-ahead rig is for.
+ */
+function sequenceMatrix(): ShotState[] {
+  const from = Number(args.get('from') ?? 640);
+  const to = Number(args.get('to') ?? 940);
+  const steps = Math.max(2, Number(args.get('steps') ?? 6));
+  const look = args.get('look') !== '0';
+  const out: ShotState[] = [];
+  for (let i = 0; i < steps; i++) {
+    const at = Math.round(from + ((to - from) * i) / (steps - 1));
+    out.push({
+      seed: Number(args.get('seed') ?? 1),
+      at,
+      time: (args.get('time') ?? 'day') as ShotState['time'],
+      debug,
+      look,
+      label: `${at}m${look ? '' : ' no-look'}`,
+    });
+  }
+  return out;
+}
+
+let shotIndex = 0;
+
 function nameFor(s: ShotState): string {
-  return `s${s.seed}_${Math.round(s.at)}m_${s.time}${s.debug ? '_debug' : ''}.png`;
+  if (s.label !== undefined) {
+    return `${String(shotIndex).padStart(2, '0')}_${s.label.replace(/[^a-z0-9]+/gi, '-')}.png`;
+  }
+  const bits = [`s${s.seed}`, `${Math.round(s.at)}m`, s.time];
+  if (s.fov !== undefined) bits.push(`fov${s.fov}`);
+  if (s.aperture !== undefined) bits.push(`ap${s.aperture}`);
+  if (s.look === false) bits.push('nolook');
+  if (s.debug) bits.push('debug');
+  return `${bits.join('_')}.png`;
 }
 
 async function main(): Promise<void> {
   await mkdir(outDir, { recursive: true });
 
-  const shots: ShotState[] = sheet
-    ? SHEET_MATRIX
-    : [
-        {
-          seed: Number(args.get('seed') ?? 1),
-          at: Number(args.get('at') ?? 0),
-          time: (args.get('time') ?? 'day') as ShotState['time'],
-          debug,
-        },
-      ];
+  const single: ShotState = {
+    seed: Number(args.get('seed') ?? 1),
+    at: Number(args.get('at') ?? 0),
+    time: (args.get('time') ?? 'day') as ShotState['time'],
+    debug,
+  };
+  const fov = optionalNumber('fov');
+  if (fov !== undefined) single.fov = fov;
+  const aperture = optionalNumber('aperture');
+  if (aperture !== undefined) single.aperture = aperture;
+  const dash = optionalNumber('dash');
+  if (dash !== undefined) single.dash = dash;
+  if (args.get('look') === '0') single.look = false;
+
+  const shots: ShotState[] = sequence
+    ? sequenceMatrix()
+    : compare
+      ? COMPARE_MATRIX
+      : sheet
+        ? SHEET_MATRIX
+        : [single];
 
   const harness = await startHarness();
   const written: string[] = [];
@@ -68,6 +139,7 @@ async function main(): Promise<void> {
   try {
     const page = await harness.newPage(device);
     for (const shot of shots) {
+      shotIndex++;
       await harness.load(page, shot);
       const stats = await page.evaluate(() => window.__dts?.stats());
       const file = join(outDir, nameFor(shot));
@@ -81,7 +153,7 @@ async function main(): Promise<void> {
       );
     }
 
-    if (sheet) {
+    if (sheet || compare || sequence) {
       const sheetFile = await buildContactSheet(harness, written, device);
       console.log(`\ncontact sheet: ${sheetFile}`);
     }

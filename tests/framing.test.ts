@@ -74,3 +74,40 @@ describe('pixel ratio', () => {
     expect(clampPixelRatio(1.5)).toBe(1.5);
   });
 });
+
+describe('framing overrides', () => {
+  it('applies each override independently', () => {
+    const f = computeFraming(412, 915, 2, { apertureFraction: 0.6 });
+    expect(f.aperture.h).toBeCloseTo(915 * 0.6, 6);
+    expect(f.header.h).toBeCloseTo(915 * VIEW.HEADER_FRACTION, 6);
+  });
+
+  it('keeps the bands tiling exactly when one is overridden', () => {
+    const f = computeFraming(412, 915, 2, { dashFraction: 0.05, apertureFraction: 0.55 });
+    expect(f.wheel.y + f.wheel.h).toBeCloseTo(915, 6);
+    expect(f.wheel.h).toBeGreaterThan(0);
+  });
+
+  it('never produces a negative wheel band, however silly the overrides', () => {
+    const f = computeFraming(412, 915, 2, { apertureFraction: 0.95, dashFraction: 0.4 });
+    expect(f.wheel.h).toBeGreaterThanOrEqual(0);
+  });
+
+  it('honours an overridden field of view', () => {
+    const wide = computeFraming(412, 915, 2, { hFov: (100 * Math.PI) / 180 });
+    const narrow = computeFraming(412, 915, 2, { hFov: (40 * Math.PI) / 180 });
+    expect(wide.vFov).toBeGreaterThan(narrow.vFov);
+    const wideH = 2 * Math.atan(Math.tan(wide.vFov / 2) * wide.apertureAspect);
+    expect((wideH * 180) / Math.PI).toBeCloseTo(100, 6);
+  });
+
+  it('honours an overridden horizon', () => {
+    const f = computeFraming(412, 915, 2, { horizonY: 0.4 });
+    const fromTop = (1 + Math.tan(f.horizonPitch) / Math.tan(f.vFov / 2)) / 2;
+    expect(fromTop).toBeCloseTo(0.4, 10);
+  });
+
+  it('falls back to the authored values when given nothing', () => {
+    expect(computeFraming(412, 915, 2, {})).toEqual(computeFraming(412, 915, 2));
+  });
+});

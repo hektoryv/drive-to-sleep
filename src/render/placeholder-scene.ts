@@ -12,6 +12,13 @@
  */
 
 import * as THREE from 'three';
+import {
+  PATH_A1,
+  PATH_A2,
+  PATH_K1,
+  PATH_K2,
+  PATH_PHASE,
+} from '../world/placeholder-path.js';
 
 /** Crude stand-in for the Phase 3 time-of-day system. Three fixed moods. */
 export type PlaceholderTime = 'day' | 'dusk' | 'night';
@@ -76,7 +83,11 @@ const SKY_FRAG = /* glsl */ `
       // washing halfway up the sky.
       col = mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.45));
     } else {
-      col = mix(uHorizon, uGround, pow(clamp(-h, 0.0, 1.0), 0.6));
+      // Held at the horizon colour well below the horizon line. The ground
+      // plane is clipped by the far plane while fog has already resolved
+      // everything to the horizon colour, so without this the sky's lower
+      // hemisphere shows through as a visible band just under the horizon.
+      col = mix(uHorizon, uGround, pow(clamp(-h, 0.0, 1.0), 2.2));
     }
     gl_FragColor = vec4(col, 1.0);
     // Raw ShaderMaterials don't get these for free the way built-in materials
@@ -102,7 +113,15 @@ const GROUND_FRAG = /* glsl */ `
   uniform vec3 uHorizon;
   uniform float uFogDensity;
   uniform float uRoadHalfWidth;
+  // (A1, K1, A2, K2) of the placeholder centreline, plus its phase. Evaluated
+  // per pixel so the road band follows the same curve the car does.
+  uniform vec4 uPath;
+  uniform float uPathPhase;
   varying vec3 vWorld;
+
+  float pathX(float s) {
+    return uPath.x * sin(uPath.y * s) + uPath.z * sin(uPath.w * s + uPathPhase);
+  }
 
   // Antialiased grid lines: width is derived from the screen-space derivative,
   // so lines stay one pixel wide into the distance instead of aliasing apart.
@@ -118,14 +137,23 @@ const GROUND_FRAG = /* glsl */ `
 
     vec3 col = uGround;
 
-    // Road-width marker band, so framing can be judged at true scale.
-    float road = 1.0 - smoothstep(uRoadHalfWidth - 0.15, uRoadHalfWidth + 0.15, abs(p.x));
+    // Road band, following the same centreline the car does. Lateral offset is
+    // measured along x rather than perpendicular to the path, which widens the
+    // band slightly in the corners — invisible at these slopes, and the real
+    // road in Phase 1 is swept geometry rather than a shader trick anyway.
+    float s = -p.y;
+    float lateral = p.x - pathX(s);
+    float road = 1.0 - smoothstep(uRoadHalfWidth - 0.15, uRoadHalfWidth + 0.15, abs(lateral));
     col = mix(col, uRoad, road);
+
+    // Centre line, so the curve reads at a glance.
+    float centre = 1.0 - smoothstep(0.06, 0.12, abs(lateral));
+    col = mix(col, uGrid, centre * 0.5 * road);
 
     float fine = gridLine(p, 10.0, 1.0);
     float coarse = gridLine(p, 100.0, 1.6);
-    col = mix(col, uGrid, fine * 0.55);
-    col = mix(col, uGrid, coarse * 0.9);
+    col = mix(col, uGrid, fine * 0.30);
+    col = mix(col, uGrid, coarse * 0.45);
 
     // Exponential-squared distance fog, resolved to the horizon colour.
     float dist = length(vWorld - cameraPosition);
@@ -164,6 +192,8 @@ export function createPlaceholderScene(initialTime: PlaceholderTime = 'day'): Pl
     fogDensity: { value: 0.0016 },
     // Half of a typical two-lane road, matching the widths Phase 1 will use.
     roadHalfWidth: { value: 3.5 },
+    path: { value: new THREE.Vector4(PATH_A1, PATH_K1, PATH_A2, PATH_K2) },
+    pathPhase: { value: PATH_PHASE },
   };
 
   const skyMat = new THREE.ShaderMaterial({
@@ -192,6 +222,8 @@ export function createPlaceholderScene(initialTime: PlaceholderTime = 'day'): Pl
       uHorizon: u.horizon,
       uFogDensity: u.fogDensity,
       uRoadHalfWidth: u.roadHalfWidth,
+      uPath: u.path,
+      uPathPhase: u.pathPhase,
     },
   });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), groundMat);
@@ -218,7 +250,8 @@ export function createPlaceholderScene(initialTime: PlaceholderTime = 'day'): Pl
     setTime,
     follow(x: number, z: number) {
       // Snapped to the coarse grid so the grid appears to scroll past a fixed
-      // world rather than sliding with the camera.
+      // world rather than sliding with the camera. The plane is 8 km across,
+      // so snapping never exposes an edge.
       ground.position.x = Math.round(x / 100) * 100;
       ground.position.z = Math.round(z / 100) * 100;
       sky.position.x = x;

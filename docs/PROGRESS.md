@@ -7,6 +7,80 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-17 — Framing retune and camera look-ahead
+
+Three changes, on your call. All three are visual and none can be finally
+judged from stills, so the values below are defensible starting points, not
+settled.
+
+**Dash band shrunk, windscreen grown.** Bands go from 5/38/22/35 to
+**5/46/15/34**. The justification for taking it out of the dash rather than the
+wheel: in the real car the binnacle sits *behind* the wheel, so the dials can
+overlap the top of the wheel band instead of needing a tall strip of their own.
+Shot 38/22 against 46/15 and 54/10 — 54% is a lovely big window but leaves 91 px
+for five dials, which Phase 4 would regret. 46/15 is the compromise.
+
+**Field of view raised from 52° to 72°, deliberately far past honest.** A
+physically correct FOV for a phone at arm's length is around 25°, which looks
+like driving through a telescope. Shot 60°/72°/84°: 84° visibly distorts at the
+frame edges and flattens the horizon; 60° is calmer but reads slower. 72° is
+where the road starts to move.
+
+**The view now leads the car into corners** — ADR-0010. The camera yaws toward
+the road's heading about three quarters of a second ahead, at 45% of the angle,
+capped at 14°, smoothed with an exponential approach.
+
+Two things I want on the record about it:
+
+1. **It uses an approach, not a spring.** The attitude springs are deliberately
+   underdamped because overshoot reads as mass. A camera that overshoots reads
+   as nausea. There is a test asserting the rig never overshoots.
+2. **The yaw belongs to the head, not the car.** `ViewState.lookYaw` is
+   separate from `heading` and only the camera consumes it. This matters from
+   Phase 4: the cockpit rides on `heading`, so turning into a bend swings the
+   A-pillars and the dash across the view. Folding the offset into `heading`
+   would rotate the whole cabin with the view and produce no visible effect at
+   all — an easy and completely invisible mistake to make later.
+
+**To make any of this reviewable, the placeholder road now curves.** Two sine
+components with a closed form, because the ground shader evaluates the same
+centreline per pixel and cannot integrate a heading field the way the real
+generator will. Tightest radius 109 m. Deleted in Phase 1; there is a test file
+keeping it honest until then, because a bug in the road would otherwise read as
+a bug in the camera.
+
+**The harness grew three things**, all of which paid for themselves immediately:
+
+- Framing overrides via URL params, so a sweep of settings is one run rather
+  than one edit-and-reshoot each.
+- `--compare` — the framing and look-ahead sweep above.
+- `--sequence --from --to --steps` — a strip of frames through one corner. It
+  is the closest a screenshot loop gets to showing motion, and it is how the
+  look-ahead was checked at all.
+
+**First sweep was worthless and I reshot it.** I picked 760 m to compare
+look-ahead on and off; the placeholder road is almost straight there, so both
+frames looked identical. Scanned for the point of maximum heading change over
+the look-ahead distance — 780 m, 16.9° — and reshot. Worth remembering: a
+comparison shot is only as good as the point it is taken at, and "nothing
+changed" can mean the feature works or that the test was blind.
+
+**Two placeholder artefacts fixed** while they were in the way: a visible
+colour band under the horizon, where the ground plane is clipped by the far
+plane but the sky's lower hemisphere was still fading toward its ground colour;
+and grid lines loud enough at the new FOV to distract from the thing being
+judged.
+
+**Still open:** the look-ahead strength and the FOV both need a real device.
+Stills show where the view ended up, never how it got there, and how a 72° FOV
+feels at speed in your hand is not a thing this loop can tell either of us.
+
+**Tests:** 72 passing, up from 49. One of the new ones failed first time — it
+scanned for a zero crossing on a 0.5 m grid with a 1e-4 tolerance, which the
+slope crosses far too fast to land on. Test bug, not a code bug; it bisects now.
+
+---
+
 ## 2026-09-17 — Phase 0 complete: foundation
 
 **Built:** the toolchain, the core runtime, the portrait framing, and the

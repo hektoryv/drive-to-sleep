@@ -33,6 +33,14 @@ export interface ShotState {
   at: number;
   time: 'day' | 'dusk' | 'night';
   debug: boolean;
+  /** Framing overrides for a tuning sweep. Degrees for fov; fractions otherwise. */
+  fov?: number;
+  aperture?: number;
+  dash?: number;
+  /** Camera look-ahead, for before/after comparison. Defaults on. */
+  look?: boolean;
+  /** Caption used in a contact sheet, when the filename isn't the point. */
+  label?: string;
 }
 
 export interface Device {
@@ -99,7 +107,16 @@ export async function startHarness(): Promise<Harness> {
       return page;
     },
     async load(page, state) {
-      const url = `${origin}/?seed=${state.seed}&time=${state.time}&debug=${state.debug ? 1 : 0}`;
+      const q = new URLSearchParams({
+        seed: String(state.seed),
+        time: state.time,
+        debug: state.debug ? '1' : '0',
+      });
+      if (state.fov !== undefined) q.set('fov', String(state.fov));
+      if (state.aperture !== undefined) q.set('aperture', String(state.aperture));
+      if (state.dash !== undefined) q.set('dash', String(state.dash));
+      if (state.look === false) q.set('look', '0');
+      const url = `${origin}/?${q.toString()}`;
       await page.goto(url, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__dts !== undefined, null, { timeout: 15000 });
       await page.evaluate(() => window.__dts?.ready);
