@@ -7,6 +7,129 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-18 — Phase 2: the drive
+
+The car exists. Handling model, attitude springs, one-finger controls, an
+autopilot, and 80 new tests. **Code complete; not signed off** — the exit
+criterion needs a real device and I cannot provide one (ADR-0008).
+
+### What was built
+
+- **`sim/vehicle.ts`** — speed, yaw, grip, slide. Longitudinal and lateral are
+  handled separately, which is what keeps it tunable. The interesting line is
+  the grip clamp: the fastest the car can rotate without exceeding its tyres is
+  `(grip · g) / speed`, so clamping the yaw rate to that produces understeer
+  for free, and whatever rotation the clamp refuses becomes the slide.
+- **`sim/attitude.ts`** — the three springs. Roll leans outward, pitch dives
+  and squats, heave is kicked by surface roughness. Rumble kicks are spaced by
+  *distance*, not time, so a rough surface is a texture you drive across rather
+  than a hum whose pitch rises with speed.
+- **`input/controls.ts`** (pure) and **`input/pointer.ts`** (DOM) — the
+  dynamic-origin scheme from ADR-0004.
+- **`sim/autopilot.ts`** — a pursuit controller. Three jobs: the harness can
+  now *drive* to a distance rather than teleport, so a still shows the body
+  where the physics put it; it is a standing handling assertion; and it may
+  become an attract mode.
+- **`sim/drive.ts`** — the car-on-road glue, extracted so the tests exercise
+  the same code the game runs rather than a copy of it.
+- **A chase camera** and **`npm run telemetry`**, which drives and prints what
+  the handling actually did.
+
+### Measured
+
+| | |
+|---|---|
+| 0–100 km/h | 5.8 s |
+| Top speed | 189 km/h, drag-limited rather than clamped |
+| 100–0 km/h | 40 m |
+| Peak lateral | 0.85 g, matching the tyre ceiling exactly |
+| Peak roll | 4.57° against a 4.5° cap — the extra is the deliberate overshoot |
+| 20 km under autopilot | 0 off-road, line held within 3 m |
+
+### Four bugs, and what each one teaches
+
+**1. The autopilot drove into a field, backwards.** Steering is positive to the
+right; heading *decreases* to the right, because forward is −Z. So a road
+bending right produces a *negative* heading error and needs a *positive* steer.
+I had the sign straight through. Two opposite conventions meeting in one
+expression is a place to write the comment before writing the code.
+
+**2. Rolling resistance was proportional to speed**, which makes it a second
+drag term rather than rolling resistance — it is the tyres deforming, not the
+air. The car was capped at 107 km/h and I nearly went looking at the engine
+curve. Now constant, with a taper near zero so it cannot oscillate around a
+standstill.
+
+**3. `lateralAccel` had the opposite sign to its own name.** It was
+`speed × yawRate`, which points *away* from the turn centre. The body roll came
+out correct anyway, because the roll target used it unnegated and the two
+errors cancelled. That is the dangerous kind of bug: the behaviour was right,
+the exported telemetry was a lie, and the first person to use `lateralG` for
+anything else would have got it backwards. Both are now correct separately.
+
+**4. The touch origin un-steered the car.** ADR-0004 specified the origin
+"slowly creeps toward the finger" when held near full deflection. But the
+distance between origin and finger *is* the input, so creeping toward the
+finger reduces it: a test holding full lock for thirty seconds with the thumb
+completely still measured the steering decaying from 1.0 to 0.52. Replaced with
+a hard drag-behind (ADR-0013), which gives everything ADR-0004 wanted and has
+no ability to move on its own.
+
+That last one is the one worth remembering. It would have been very hard to
+find from the driver's seat — the car would have felt like it "washed out" of
+long corners, which is a thing cars do, so the instinct would have been to go
+looking in the tyre model. **Anything sitting between the finger and the car
+needs a test that holds the finger still for a long time.**
+
+### One tuning mistake worth recording
+
+The autopilot ran slightly wide on the tightest hairpins — 0.44% of 20 km spent
+with a wheel on the verge. I raised the cross-track gain to fix it and made it
+*catastrophically* worse: 95% off-road, wandering 97 m from the centreline. A
+fixed proportional gain that holds the line at 50 km/h oscillates and then
+diverges at 110, because the same correction is a much larger course change
+when applied for the same number of metres at twice the speed. The fix is to
+scale the gain down with speed, which is control theory rather than taste.
+
+Recorded because the instinct — "it is not correcting enough, correct harder" —
+is exactly wrong, and I will have it again.
+
+### Contract changes
+
+Two, both additive:
+
+- `RoadQuery.groundHeightAt(s, t)` — the car needs to sit on the world rather
+  than float above a plane, and how high the ground is is the world's business.
+- `CarView` gained `surface`, `lateralG`, `slipAngle`, `yawRate`, `lateralMs`.
+  Telemetry is cheap to expose and handling cannot be tuned without it.
+
+### What I cannot tell you
+
+**Whether it feels good.** Everything above is numbers and stills. The numbers
+are the ones I would want to see and the stills show the body where the physics
+put it, but a car can produce impeccable telemetry and feel dead, and the
+opposite is also true. Phase 2's exit criterion says a real build on a real
+phone, and it means it.
+
+Specifically unjudged: turn-in weight (`YAW_RESPONSE`), whether the steering
+falloff is too much or too little at speed, whether 4.5° of roll reads as
+weight or as seasickness in motion, and whether the control radii suit a thumb.
+Those five constants are where I would start.
+
+**Also untested: input latency through a WebView** — ADR-0001's standing risk,
+invisible to this loop entirely, and due early in Phase 6.
+
+### Deferred
+
+- **A car body for the chase camera.** The chase view shows the road and the
+  line, but with no geometry there is nothing to watch lean. It belongs to
+  `cockpit/`, which is Phase 4, and building a throwaway box now to look at for
+  one phase is not worth a domain.
+- **Collision jolt** is written (`jolt()` in attitude) and tested, but nothing
+  calls it until traffic arrives in Phase 5.
+
+---
+
 ## 2026-09-17 — Modular restructure, and Phase 1: the road
 
 Two pieces of work in one go, in that order deliberately: the road is exactly

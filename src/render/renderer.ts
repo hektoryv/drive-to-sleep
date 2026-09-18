@@ -9,9 +9,12 @@
  */
 
 import * as THREE from 'three';
-import { TONEMAP_EXPOSURE, VIEW } from './tuning.js';
+import { CHASE, TONEMAP_EXPOSURE, VIEW } from './tuning.js';
 import { clampPixelRatio, computeFraming, toGlY } from './framing.js';
 import type { Framing, FramingOverrides, ViewState } from '../contracts/view.js';
+
+/** Cockpit is the game. Chase exists only to look at the car — see CHASE. */
+export type CameraMode = 'cockpit' | 'chase';
 
 export interface Renderer {
   readonly canvas: HTMLCanvasElement;
@@ -21,6 +24,7 @@ export interface Renderer {
   resize(width: number, height: number, rawPixelRatio: number): void;
   /** Replaces the framing overrides and re-derives the projection. */
   setFramingOverrides(overrides: FramingOverrides): void;
+  setCameraMode(mode: CameraMode): void;
   render(scene: THREE.Scene, view: Readonly<ViewState>): void;
   dispose(): void;
 }
@@ -50,6 +54,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   const camera = new THREE.PerspectiveCamera(50, 1, VIEW.NEAR_PLANE, VIEW.FAR_PLANE);
   camera.rotation.order = 'YXZ';
 
+  let cameraMode: CameraMode = 'cockpit';
   let overrides: FramingOverrides = {};
   let lastSize = { width: 1, height: 1, rawPixelRatio: 1 };
   let framing = computeFraming(1, 1, 1);
@@ -68,22 +73,44 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   }
 
   function render(scene: THREE.Scene, view: Readonly<ViewState>): void {
-    // The eye sits left of centre in a left-hand-drive car, offset along the
-    // car's own right axis rather than the world's.
     const sin = Math.sin(view.heading);
     const cos = Math.cos(view.heading);
-    camera.position.set(
-      view.x + VIEW.EYE_LATERAL * cos,
-      view.y + VIEW.EYE_HEIGHT + view.heaveY,
-      view.z - VIEW.EYE_LATERAL * sin,
-    );
-    // horizonPitch is framing, not motion: it places the horizon within the
-    // aperture and is constant for a given screen.
-    camera.rotation.set(
-      framing.horizonPitch + view.pitch,
-      view.heading + view.lookYaw,
-      view.roll,
-    );
+
+    if (cameraMode === 'chase') {
+      // Behind and above, along the car's own axes. Inherits only part of the
+      // roll, because a chase camera that rolls fully with the body hides the
+      // very thing it was brought out to show.
+      const forwardX = -sin;
+      const forwardZ = -cos;
+      camera.position.set(
+        view.x - forwardX * CHASE.BACK_M,
+        view.y + CHASE.UP_M + view.heaveY,
+        view.z - forwardZ * CHASE.BACK_M,
+      );
+      camera.rotation.set(
+        CHASE.PITCH + view.pitch,
+        view.heading + view.lookYaw,
+        -view.roll * CHASE.ROLL_SHARE,
+      );
+    } else {
+      // The eye sits left of centre in a left-hand-drive car, offset along the
+      // car's own right axis rather than the world's.
+      camera.position.set(
+        view.x + VIEW.EYE_LATERAL * cos,
+        view.y + VIEW.EYE_HEIGHT + view.heaveY,
+        view.z - VIEW.EYE_LATERAL * sin,
+      );
+      // horizonPitch is framing, not motion: it places the horizon within the
+      // aperture and is constant for a given screen.
+      camera.rotation.set(
+        framing.horizonPitch + view.pitch,
+        view.heading + view.lookYaw,
+        // Negated: a positive z rotation tilts the camera's up vector toward
+        // -X, which leans it left, while ViewState.roll is positive leaning
+        // right. Passing it through unflipped banks the world the wrong way.
+        -view.roll,
+      );
+    }
 
     const ap = framing.aperture;
     const glY = toGlY(framing, ap);
@@ -112,6 +139,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       };
     },
     resize,
+    setCameraMode(mode: CameraMode) {
+      cameraMode = mode;
+    },
     setFramingOverrides(next: FramingOverrides) {
       overrides = next;
       resize(lastSize.width, lastSize.height, lastSize.rawPixelRatio);

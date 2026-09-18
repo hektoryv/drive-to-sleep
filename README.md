@@ -9,13 +9,18 @@ No sound.
 
 ## Status
 
-**Phase 1 complete.** The road generates: curvature, grade and width as noise
-fields over distance with hairpins, sweepers and crests injected on top, swept
-into geometry with terrain either side. The codebase is split into sealed
-domains so it can be worked on from several directions at once
-([docs/06-modules.md](docs/06-modules.md)).
+**Phase 2 code complete, awaiting a device.** The road generates and the car
+drives it: arcade handling with a grip clamp that produces real understeer,
+three attitude springs that give the body weight, and the one-finger control
+scheme. 168 tests, including 20 km of the real generated road under autopilot
+without leaving the tarmac.
 
-Phase 2 is next, and it's the one that matters: making the car feel good.
+What's missing is the only thing that matters: **whether it feels good.** That
+needs hands on a real build, and it's the phase's actual exit criterion.
+See [docs/TODO.md](docs/TODO.md) for the five constants to try first.
+
+The codebase is split into sealed domains so it can be worked on from several
+directions at once — see [docs/06-modules.md](docs/06-modules.md).
 
 ```
 npm install
@@ -25,6 +30,8 @@ npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
 npm run shoot -- --sheet                      # contact sheet
 npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner
 npm run lint                                  # also checks the architecture
+npm run shoot -- --handling                   # the car caught mid-corner
+npm run telemetry                             # drive, and print what it did
 ```
 
 ## Where things are

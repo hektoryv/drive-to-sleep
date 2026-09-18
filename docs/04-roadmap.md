@@ -1,6 +1,6 @@
 # 04 — Roadmap
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 Eight phases. Each has a **goal**, a **task list**, and an **exit criterion**
 that must be demonstrable before the next phase starts. Progress is logged in
@@ -61,41 +61,48 @@ noise rather than more events. See PROGRESS.md.
 
 ---
 
-## Phase 2 — The drive *(current)*
-
----
+## Phase 2 — The drive ⏸ *code complete 2026-09-18, awaiting device sign-off*
 
 **Goal:** the car feels good. This is the most important phase in the project.
 
-- [ ] Vehicle model: speed, yaw, grip, slide, surfaces
-- [ ] Attitude springs: roll, pitch, heave
-- [ ] Pointer handling + dynamic origin + drift + release recentre
-- [ ] Control curves and the steering speed-falloff
-- [ ] Driver-eye camera consuming attitude (no cockpit geometry yet —
-      just the eye point, so the lean is unmistakable)
-- [ ] Off-road: grip loss, drag, rumble
-- [ ] Handling regression tests
-- [ ] **Tuning pass.** Budget real time here. Expect to go round several times.
+- [x] Vehicle model: speed, yaw, grip, slide, surfaces
+- [x] Attitude springs: roll, pitch, heave
+- [x] Pointer handling + dynamic origin + release recentre
+- [x] Control curves and the steering speed-falloff
+- [x] Driver-eye camera consuming attitude
+- [x] Off-road: grip loss, drag, rumble
+- [x] Handling regression tests — 80 of them, driving the real generated road
+- [x] An autopilot, so the harness can drive rather than teleport
+- [x] A chase camera and `npm run telemetry`
+- [ ] **Tuning pass on a real device.** Not done. Cannot be done from here.
 
-**Exit:** you drive it on your phone and it feels good. Not "works" — *good*.
-Corners you can place the car in, a lean you can feel, a throttle you want to
-hold open. If it doesn't feel right, we do not proceed; everything after this
-is decoration on top of this.
+**Exit: not met, and not meetable from this side.** The code is complete and
+the numbers are where they should be — 0.85 g at the tyre ceiling, 4.5° of
+roll, 20 km under autopilot without leaving the tarmac, 5.8 s to 100 km/h — and
+stills now show the body where the physics actually put it. None of that is the
+criterion. The criterion is that you drive it and it feels good.
 
-**Watch out for:** roll that looks right in a screenshot but reads as seasick
-in motion. Screenshots cannot judge this phase — this is the one place where a
-build on your actual phone is genuinely required.
+Five constants are the likely first stops: `YAW_RESPONSE` (turn-in weight),
+`STEER_FALLOFF_MIN`, `ROLL_MAX`, `ROLL_ZETA`, and the control radii in
+`input/tuning.ts`. PROGRESS.md lists what is specifically unjudged.
+
+**The warning held**, with one qualification. Screenshots still cannot judge
+this phase. But what they *could* do turned out to be more than expected once
+the harness could drive the car and hold an input: a still at 0.85 g with the
+body at full lean is a real check that the model is doing something, even if it
+says nothing about how it feels getting there.
 
 ---
 
-## Phase 3 — The view
+## Phase 3 — The view *(next)*
 
 **Goal:** it looks good.
 
 - [ ] Sky: gradient shader, sun disc, horizon glow, stars, moon
 - [ ] Time-of-day cycle driving sun position and all palettes
 - [ ] Fog derived from sky colour, plus height fog
-- [ ] Filmic tonemapping, colour grading
+- [x] Filmic tonemapping — in since Phase 0 (ADR-0007)
+- [ ] Colour grading
 - [ ] Distant mountain impostor layers with parallax
 - [ ] Instanced billboard props with the near-3D cross-fade band
 - [ ] Biome parameter sets and distance-driven blending

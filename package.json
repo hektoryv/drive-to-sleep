@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "shoot": "tsx tools/shoot.ts",
-    "perf": "tsx tools/perf.ts"
+    "perf": "tsx tools/perf.ts",
+    "telemetry": "tsx tools/telemetry.ts"
   },
   "dependencies": {
     "three": "^0.169.0"

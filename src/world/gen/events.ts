@@ -90,9 +90,18 @@ function pickKind(index: number, seed: number): EventKind {
   return 'sweeper';
 }
 
-/** The event occupying slot `index`. Deterministic and side-effect free. */
+/**
+ * The event occupying slot `index`. Deterministic and side-effect free.
+ *
+ * The first two slots are forced to straights. Without it, a drive can open
+ * mid-hairpin — seed 1 did — and the first second of the game is a correction
+ * rather than a drive. Everything after ~400 m is the generator's own business.
+ */
+const CALM_START_SLOTS = 2;
+
 export function eventAt(index: number, seed: number): RoadEvent {
-  const kind = pickKind(index, seed);
+  const kind: EventKind =
+    index >= -1 && index < CALM_START_SLOTS - 1 ? 'straight' : pickKind(index, seed);
   const jitter = (hash01(index, seed + S_JITTER) - 0.5) * EVENTS.SPACING_JITTER_M;
   const [minLen, maxLen] = KIND_LENGTH[kind];
   const length = minLen + hash01(index, seed + S_LENGTH) * (maxLen - minLen);

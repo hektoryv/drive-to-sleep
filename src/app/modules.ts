@@ -14,7 +14,8 @@
 import type { GameModule } from '../contracts/module.js';
 import type { ViewState } from '../contracts/view.js';
 import { createWorldModule } from '../world/world-module.js';
-import { createCruiseModule } from '../sim/cruise-module.js';
+import { createInputModule } from '../input/input-module.js';
+import { createVehicleModule } from '../sim/vehicle-module.js';
 import { createViewModule } from '../render/view-module.js';
 
 export interface ModuleSetOptions {
@@ -26,9 +27,10 @@ export function createModules(options: ModuleSetOptions): GameModule[] {
     // The road first: everything downstream reads it, and one tick of
     // staleness in the other direction is invisible at 5 km of look-ahead.
     createWorldModule(),
-    // PHASE 1: a placeholder cruise. The real vehicle model replaces this
-    // module in Phase 2 and nothing else has to change.
-    createCruiseModule(),
+    // Input before the car, so the car acts on this tick's thumb and not the
+    // last one's. One frame of input latency is a thing you can feel.
+    createInputModule(),
+    createVehicleModule(),
     // Last, so the camera sees this tick's car rather than the previous one's.
     createViewModule({ view: options.view }),
   ];

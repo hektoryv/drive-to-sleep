@@ -56,6 +56,16 @@ export interface RoadQuery {
   surfaceAt(s: number, t: number): Surface;
 
   /**
+   * Height of the ground at road coordinates — the banked tarmac on the road,
+   * the terrain off it, and continuous across the join.
+   *
+   * The car needs this to sit on the world rather than float above a plane,
+   * and it is the world's business how high the ground is, so it belongs here
+   * rather than in a second copy of the terrain field inside `sim/`.
+   */
+  groundHeightAt(s: number, t: number): number;
+
+  /**
    * Converts a world position to road coordinates, writing into `out`.
    * `nearS` is a hint — the previous frame's distance — because the exact
    * search is expensive and the answer never moves far between frames.

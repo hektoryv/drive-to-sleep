@@ -5,21 +5,31 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 
 ---
 
-## Now — Phase 2: The drive
+## Now — blocked on you
 
-The most important phase in the project. Everything after it is decoration on
-top of it, and its exit criterion needs a real device (ADR-0008).
+Phase 2 is code complete and cannot be signed off from here. Everything below
+needs hands on a real build.
 
-- [ ] `sim/vehicle.ts` — speed, yaw, grip, slide, per-surface handling
-- [ ] `sim/attitude.ts` — roll / pitch / heave springs
-- [ ] `input/pointer.ts` — dynamic-origin touch, drift, release recentre
-- [ ] `input/controls.ts` — curves, deadzone, steering speed-falloff
-- [ ] Replace `sim/cruise-module.ts` with the real vehicle module
-- [ ] Off-road: grip loss, drag, rumble into the heave spring
-- [ ] Chase camera for debugging (absorbs Phase 1's deferred free-fly camera)
-- [ ] Handling regression tests — scripted inputs, assert on trajectory and
-      attitude envelopes
-- [ ] **Tuning pass.** Budget real time. Expect several rounds.
+- [ ] **Drive it.** Does it feel good? Corners you can place the car in, a lean
+      you can feel, a throttle you want to hold open.
+- [ ] Turn-in weight — `CAR.YAW_RESPONSE`, currently 7.5. Lower is more
+      languid; too low and it steers from the back seat.
+- [ ] Steering at speed — `CAR.STEER_FALLOFF_MIN`, currently 0.2. Higher is
+      more alive and twitchier.
+- [ ] Lean — `ATTITUDE.ROLL_MAX` (4.5°) and `ROLL_ZETA` (0.7). The question is
+      whether it reads as weight or as seasickness *in motion*.
+- [ ] Control radii — `input/tuning.ts`. Do they suit your thumb?
+
+## Next — Phase 3: The view
+
+- [ ] Time-of-day cycle driving sun position and every palette
+- [ ] Sky: sun disc, horizon glow, stars, moon
+- [ ] Height fog on top of the distance fog
+- [ ] Distant mountain impostor layers (also fixes the terrain ribbon edge)
+- [ ] Instanced billboard props with the near-3D cross-fade band
+- [ ] Biome parameter sets and distance-driven blending
+- [ ] Colour grading, bloom, vignette, animated dither grain
+- [ ] Quality tiers
 
 ## Later
 
@@ -52,6 +62,13 @@ Things to resolve before the phase that needs them:
 - **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
   sequence of stills through one corner, which shows where the view ends up but
   not how it gets there. Needs hands on a device.
+- **A car body for the chase camera** (Phase 4): the chase view shows the road
+  and the line, but with no geometry there is nothing to watch lean. It belongs
+  to `cockpit/`; building a throwaway box now is not worth a domain.
+- **Velocity-aligned camera term** (Phase 3+): the car can slide now, so the
+  extra term ADR-0010 set aside is finally testable.
+- **Autopilot as attract mode** (Phase 5): it drives well enough to sit behind
+  a start screen, if the start screen wants a moving background.
 - **Curvature shaping** (Phase 2): `CURVATURE_SHAPE` is 0.62, chosen to fix a
   road that measured 57% straight. The distribution is a proxy for "a road you
   want to drive" — re-judge once there is a car to drive it with.
@@ -78,6 +95,23 @@ Things to resolve before the phase that needs them:
   confirming it doesn't happen mid-drive on a real device.
 
 ## Done
+
+<details>
+<summary>Phase 2 — The drive (2026-09-18, pending device sign-off)</summary>
+
+- [x] `sim/vehicle.ts` — speed, yaw, grip clamp, slide, per-surface handling
+- [x] `sim/attitude.ts` — roll, pitch, heave springs, distance-spaced rumble
+- [x] `sim/drive.ts` — the car-on-road glue the tests share with the game
+- [x] `sim/autopilot.ts` — a pursuit controller, so the harness can drive
+- [x] `input/controls.ts` (pure) and `input/pointer.ts` (DOM)
+- [x] Replaced the Phase 1 placeholder cruise
+- [x] Off-road grip loss, drag and rumble
+- [x] Debug chase camera and `npm run telemetry`
+- [x] `--handling` contact sheet: the car caught mid-corner at the grip limit
+- [x] 80 tests, including 20 km of real road under autopilot
+- [x] ADR-0013 after the touch origin turned out to un-steer the car
+
+</details>
 
 <details>
 <summary>Phase 1 — The road, and the modular restructure (2026-09-17)</summary>

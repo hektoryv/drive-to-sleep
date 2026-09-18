@@ -35,6 +35,7 @@ const debug = args.get('debug') === 'true' || args.get('debug') === '1';
 const sheet = args.get('sheet') === 'true';
 const compare = args.get('compare') === 'true';
 const sequence = args.get('sequence') === 'true';
+const handling = args.get('handling') === 'true';
 
 function optionalNumber(key: string): number | undefined {
   const raw = args.get(key);
@@ -94,6 +95,24 @@ function sequenceMatrix(): ShotState[] {
   return out;
 }
 
+/**
+ * The car doing things, rather than the road being looked at.
+ *
+ * Each shot drives to the same point and then holds a fixed input for a couple
+ * of seconds, so the body is caught where the physics put it. It is the only
+ * way a still shows anything about Phase 2 at all — and even then it shows
+ * where the lean ended up, never how it got there (ADR-0008).
+ */
+const HANDLING_MATRIX: ShotState[] = [
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0, throttle: 0.6, brake: 0 }, holdS: 2, label: 'level (straight)' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'turning right' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: -0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'turning left' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0, throttle: 0, brake: 1 }, holdS: 1, label: 'braking (dive)' },
+  { seed: 1, at: 900, time: 'day', debug: false, cam: 'chase', hold: { steer: 0, throttle: 0.6, brake: 0 }, holdS: 2, label: 'chase level' },
+  { seed: 1, at: 900, time: 'day', debug: false, cam: 'chase', hold: { steer: 0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'chase turning right' },
+  { seed: 1, at: 900, time: 'day', debug: true, cam: 'chase', hold: { steer: 1, throttle: 1, brake: 0 }, holdS: 4, label: 'chase off-road' },
+];
+
 let shotIndex = 0;
 
 function nameFor(s: ShotState): string {
@@ -125,13 +144,15 @@ async function main(): Promise<void> {
   if (dash !== undefined) single.dash = dash;
   if (args.get('look') === '0') single.look = false;
 
-  const shots: ShotState[] = sequence
-    ? sequenceMatrix()
-    : compare
-      ? COMPARE_MATRIX
-      : sheet
-        ? SHEET_MATRIX
-        : [single];
+  const shots: ShotState[] = handling
+    ? HANDLING_MATRIX
+    : sequence
+      ? sequenceMatrix()
+      : compare
+        ? COMPARE_MATRIX
+        : sheet
+          ? SHEET_MATRIX
+          : [single];
 
   const harness = await startHarness();
   const written: string[] = [];
@@ -153,7 +174,7 @@ async function main(): Promise<void> {
       );
     }
 
-    if (sheet || compare || sequence) {
+    if (sheet || compare || sequence || handling) {
       const sheetFile = await buildContactSheet(harness, written, device);
       console.log(`\ncontact sheet: ${sheetFile}`);
     }

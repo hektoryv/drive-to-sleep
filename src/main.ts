@@ -85,5 +85,7 @@ const ready = new Promise<void>((resolve) => {
 
 const api = installTestApi(app, ready);
 if (params.get('look') === '0') api.setLookAheadEnabled(false);
+if (params.get('cam') === 'chase') api.setCameraMode('chase');
+if (params.get('auto') === '1') api.setAutopilot(true);
 
 app.start();

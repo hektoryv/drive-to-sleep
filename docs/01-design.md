@@ -1,6 +1,6 @@
 # 01 — Game Design
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 Everything here is a starting value to be tuned against the real thing, not a
 law. Numbers live in `src/sim/tuning.ts` so they can be changed in one place.
@@ -55,16 +55,21 @@ of the reason this control scheme will feel good.
 | `brakeRadius` | 12% of screen height | Shorter — brakes should be eager |
 | `deadzone` | 4% of `steerRadius` | Stops micro-jitter from a resting thumb |
 | `steerCurve` | `x * (0.35 + 0.65*x²)` | Fine control near centre, full lock available |
-| `originDriftRate` | 12% of radius per second | See below |
+| origin drag | 1 radius, hard | See below |
 | `releaseRecentre` | 6.0 /s exponential | How fast the wheel returns on lift-off |
 
-### Origin drift
+### Origin drag
 
 A real problem with dynamic-origin sticks: hold a long corner and your finger
-walks to the edge of the screen and runs out of room. Fix: when the finger is
-held near full deflection, the **origin slowly creeps toward the finger**
-(`originDriftRate`). You never run out of travel, and because the drift is
-slow it's invisible during normal driving.
+walks to the edge of the screen and runs out of room. Fix: the **origin is
+dragged along behind the finger**, never further than one radius away. Push
+past full deflection and the origin comes with you, so the edge of the screen
+is not a limit.
+
+Note what it deliberately does *not* do: creep toward the finger on its own.
+That was the first version and it silently un-steered the car — thirty seconds
+of held lock decayed to half lock with the thumb completely still. See
+ADR-0013.
 
 ### Lift-off behaviour
 
@@ -106,15 +111,22 @@ constant.
 
 ### Starting values
 
+Measured from the built model, not estimated:
+
 | Parameter | Value |
 |---|---|
-| Top speed | 195 km/h |
-| 0–100 km/h | ~6.5 s (front-loaded torque curve, it's a 70s car) |
+| Top speed | 189 km/h (drag-limited, not clamped) |
+| 0–100 km/h | 5.8 s |
+| 0–160 km/h | 12.2 s |
+| 100–0 km/h | 40 m |
+| Peak lateral | 0.85 g |
 | Wheelbase | 2.27 m |
 | Max steer angle | 32° at the wheels |
-| Steer falloff | full lock below 30 km/h → 22% lock at top speed |
-| Braking | 0.9 g on tarmac |
+| Steer falloff | full lock below 30 km/h → 20% authority at top speed |
 | Grip (tarmac / gravel / grass) | 1.0 / 0.62 / 0.45 |
+
+Slightly quicker off the line and slower at the top end than the real car it
+evokes, which suits a game where you are rarely at either extreme.
 
 ### Body attitude — the lean
 

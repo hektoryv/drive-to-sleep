@@ -1,6 +1,6 @@
 # 06 — Modules and domain ownership
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 This project is built so that several people — or several agents — can work on
 different parts of it at once without their changes reaching each other. That
@@ -16,7 +16,7 @@ its shaders and its tuning constants.
 |---|---|---|
 | **world** | The environment. Road generation, terrain, props, biomes, sky — *and* all of their meshes and shaders. | `src/world/` |
 | **sim** | The car. Vehicle model, attitude, traffic, collision, scoring. | `src/sim/` |
-| **input** | Touch handling, control curves. | `src/input/` |
+| **input** | Touch handling, control curves, the dynamic-origin scheme. | `src/input/` |
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
 | **cockpit** | The 911 interior. Dash, wheel, gauges, mirror. | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
@@ -144,6 +144,17 @@ If you are picking up one domain:
 
 The debug overlay shows per-module step cost, so "which domain got slower" is
 answerable without profiling.
+
+## The one sanctioned exception
+
+`input/pointer.ts` listens on `window` rather than on its own overlay layer.
+That is deliberate: "input" is precisely the domain whose job is global, the
+game is fullscreen, and routing touches through a stack of overlay layers would
+make the control scheme depend on DOM ordering — which is exactly the kind of
+accidental coupling between domains the architecture exists to prevent.
+
+It is the only one. If you find yourself wanting a second, that is a sign a
+contract is missing.
 
 ## What goes in `app/`
 

@@ -92,5 +92,19 @@ export const CAMERA = {
   RESPONSE_RATE: 4.5,
 } as const;
 
+/**
+ * Debug chase camera. Not a game feature — ADR-0006 locks the game to the
+ * cockpit — but the one view that shows the car's line through a corner and
+ * the body leaning from outside, which is otherwise impossible to photograph.
+ */
+export const CHASE = {
+  BACK_M: 9,
+  UP_M: 3.4,
+  /** How much of the body roll the chase camera inherits. */
+  ROLL_SHARE: 0.35,
+  /** Downward tilt, radians, so the car sits in the lower half of the frame. */
+  PITCH: -7 * DEG,
+} as const;
+
 /** Filmic tonemapping exposure. See ADR-0007. */
 export const TONEMAP_EXPOSURE = 1.15;

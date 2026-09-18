@@ -7,13 +7,43 @@
  */
 
 import type { App } from './app.js';
+import type { GameModule } from '../contracts/module.js';
 import type { FramingOverrides } from '../contracts/view.js';
+import type { CameraMode } from '../render/renderer.js';
 
 export interface TestApi {
   /** Resolves once the first frame has been drawn. */
   ready: Promise<void>;
-  /** Fast-forwards the simulation to a distance in metres, then holds. */
+  /**
+   * Drives to a distance in metres under autopilot, then hands control back.
+   *
+   * Deliberately *drives* rather than teleports: the car arrives having gone
+   * round the corners, so a still taken here shows the body where the physics
+   * actually put it. A teleported car would be level and centred, which is the
+   * one thing Phase 2 must never be photographed as.
+   */
   warpTo(distanceM: number): void;
+  /** Runs a fixed number of seconds of simulation. */
+  advanceSeconds(seconds: number): void;
+  /** Hands the car to the autopilot, or back to the finger. */
+  setAutopilot(enabled: boolean): void;
+  /** Overrides the finger with fixed control values. null returns control. */
+  setScriptedInput(input: { steer: number; throttle: number; brake: number } | null): void;
+  setCameraMode(mode: CameraMode): void;
+  /** Everything the handling is doing right now. */
+  telemetry(): {
+    distanceM: number;
+    lateralM: number;
+    speedKmh: number;
+    lateralG: number;
+    rollDeg: number;
+    pitchDeg: number;
+    steerDeg: number;
+    slipDeg: number;
+    yawRate: number;
+    surface: string;
+    onRoad: boolean;
+  };
   setDebugVisible(v: boolean): void;
   /** Retunes the framing live, for sweep shots. */
   setFramingOverrides(overrides: FramingOverrides): void;
@@ -53,19 +83,74 @@ declare global {
   }
 }
 
+/** Finds a module by name and narrows it to whatever extra surface it exposes. */
+function moduleAs<T>(app: App, name: string): (GameModule & Partial<T>) | undefined {
+  return app.host.modules.find((m) => m.name === name) as (GameModule & Partial<T>) | undefined;
+}
+
+interface AutopilotCapable {
+  setAutopilot(enabled: boolean): void;
+}
+interface ScriptCapable {
+  setScriptedInput(input: { steer: number; throttle: number; brake: number } | null): void;
+}
+interface LookAheadCapable {
+  setLookAheadEnabled(v: boolean): void;
+}
+
 export function installTestApi(app: App, ready: Promise<void>): TestApi {
+  const setAutopilot = (enabled: boolean): void => {
+    moduleAs<AutopilotCapable>(app, 'sim')?.setAutopilot?.(enabled);
+  };
+
   const api: TestApi = {
     ready,
-    warpTo: (d) => app.warpTo(d),
+
+    warpTo(distanceM: number) {
+      if (app.car.distanceM >= distanceM) return;
+      setAutopilot(true);
+      // Chunked rather than one long advance, so the loop is asked for a
+      // sensible slice at a time and a stuck car cannot spin forever.
+      const CHUNK_S = 0.5;
+      const maxChunks = Math.ceil((distanceM / 8) / CHUNK_S) + 400;
+      let chunks = 0;
+      while (app.car.distanceM < distanceM && chunks < maxChunks) {
+        app.advanceSeconds(CHUNK_S);
+        chunks++;
+      }
+      setAutopilot(false);
+    },
+
+    advanceSeconds: (s) => app.advanceSeconds(s),
+    setAutopilot,
+    setScriptedInput(input) {
+      moduleAs<ScriptCapable>(app, 'input')?.setScriptedInput?.(input);
+    },
+    setCameraMode: (mode) => app.setCameraMode(mode),
+
+    telemetry() {
+      const c = app.car;
+      return {
+        distanceM: c.distanceM,
+        lateralM: c.lateralM,
+        speedKmh: c.speedMs * 3.6,
+        lateralG: c.lateralG,
+        rollDeg: (c.roll * 180) / Math.PI,
+        pitchDeg: (c.pitch * 180) / Math.PI,
+        steerDeg: (c.steerAngle * 180) / Math.PI,
+        slipDeg: (c.slipAngle * 180) / Math.PI,
+        yawRate: c.yawRate,
+        surface: c.surface,
+        onRoad: c.onRoad,
+      };
+    },
+
     setDebugVisible: (v) => app.setDebugVisible(v),
     setFramingOverrides: (o) => app.setFramingOverrides(o),
     setLookAheadEnabled(v: boolean) {
       // Reached through the module rather than the app: turning look-ahead off
       // is the view domain's business, and the app has no opinion about it.
-      const mod = app.host.modules.find((m) => m.name === 'view') as
-        | { setLookAheadEnabled?: (v: boolean) => void }
-        | undefined;
-      mod?.setLookAheadEnabled?.(v);
+      moduleAs<LookAheadCapable>(app, 'view')?.setLookAheadEnabled?.(v);
     },
     sceneReport: () => app.sceneReport(),
     pause: () => app.stop(),
