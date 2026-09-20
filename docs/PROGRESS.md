@@ -922,3 +922,78 @@ sub-60 m-radius corners, and the signs read correctly at both.
 items are all colour and post — grading, bloom, vignette, grain, height fog,
 the moon — which is the end-production work the terrain palette was already
 deferred into, so Phase 4 (the cockpit) is probably the better next phase.
+
+---
+
+## 2026-09-20 — Phase 4 opens: there is a car around you
+
+**Built:** the render architecture the cabin needs, and a cabin blocked in.
+
+The bottom half of the screen has been flat black since Phase 0. It could not
+be anything else: the world is scissored to the aperture band, so cockpit
+geometry added to the world scene would have been clipped to the windscreen
+along with everything else.
+
+**Decided:** ADR-0017 — the cockpit is a second pass, over the whole display,
+on its own layer, with its own camera. The cockpit camera shares the world
+camera's position and rotation every frame and differs only in projection: the
+world's frustum extended to the screen edges and kept *centred on the aperture*
+rather than on the screen, via `setViewOffset`. Both cameras then agree about
+angular scale and about where straight ahead is, so the cabin and the road
+share one horizon.
+
+What landed with it:
+
+- **A wheel that turns with your thumb.** Driven from `CarView.steerAngle` —
+  the same number the tyres get — so the rim and the finger can never disagree,
+  which is what ADR-0004 requires. Verified turning the right way: at 14.4° of
+  steer into a right-hander the rim comes round about 75° clockwise.
+- **A dash**, blocked in: one solid mass, far wider and deeper than the frame,
+  with a darker band along its leading edge.
+- **The cabin does not take `lookYaw`.** It is placed in the car's frame and
+  the camera turns inside it, so entering a bend swings the cabin across the
+  view instead of rotating the interior with the camera. `ViewState.lookYaw`
+  has carried a comment specifying exactly this since Phase 0 and nothing had
+  implemented it until now.
+
+**Learned / noted:**
+
+- **`autoClear` has to go off.** three.js clears at the start of every `render`
+  call, so the second full-viewport pass wiped the world. Caught immediately,
+  but it is the kind of thing that looks like the cockpit failing to draw.
+- **The eye position moved into the contract.** The cabin has to sit exactly
+  where the camera is, and both `render/` and `cockpit/` needed the seat offset
+  and eye height to work it out. `ViewState` now carries `eyeX/eyeY/eyeZ`,
+  written by `render/`, which owns the camera and therefore owns the answer.
+  That also fixed a doc bug: `ViewState.x/y/z` has been commented as the eye
+  position since Phase 0 and has always been the car's.
+- **A thin plate reads as furniture.** The dash was first built the way you
+  would model it — a shelf and a separate face — and from the driver's seat you
+  could see the underside of the shelf and the edge where it stopped. It read
+  as a table. One solid mass, oversized in every direction so no edge is ever
+  in shot, reads as a car. The same thing then happened again with the binnacle
+  hood, which is a thin plate with two cheeks: one cheek in frame, and it was a
+  table with a leg.
+- **So the binnacle was built and then removed.** A hood only makes sense with
+  dials under it to be hooded, and shipping it empty made the cabin worse.
+  Its dimensions are still in `tuning.ts` and are the thing to distrust when it
+  comes back: 0.62 m across at 0.6 m from the eye subtends nearly
+  three-quarters of the screen, about twice what it should be.
+- **The cabin cannot be authored at life size.** The field of view is
+  deliberately much wider than a real windscreen subtends (ADR-0009), so a
+  physically correct dash and wheel come out enormous. Every length in
+  `cockpit/tuning.ts` was found by putting the thing on screen and moving it,
+  not by measuring a car. That is the right way round for a stage set, and it
+  is worth saying out loud so nobody later "corrects" the numbers to real ones.
+
+**Honestly:** the cabin is blocked in, not designed. It is flat red boxes with
+one light on them, there are no dials, and the shapes want the owner's eye far
+more than mine — the art target shows the interior, and the whole point of
+`cockpit/tuning.ts` is that a styling pass is a diff to one file.
+
+**Cost:** 7 draw calls and 836 triangles for the entire frame, cabin included.
+
+**Next:** the dials, and the contract that lets the cabin know what time of day
+it is. `world/gen/daylight.ts` already computes `instrumentGlow` for exactly
+this and the cockpit cannot see it; that seam is the interesting design
+question in this phase.

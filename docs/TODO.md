@@ -21,7 +21,24 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 - [ ] Mix balance — `MASTER.GAIN`, then the three `GAIN_MAX`/`GAIN_LOAD`
       values against each other. Phone speaker first, then headphones.
 
-## Next — Phase 3: The view *(in progress)*
+## Next — Phase 4: The cockpit *(in progress)*
+
+The render architecture is in (ADR-0017) and the cabin is **blocked in, not
+designed**: a red mass and a wheel that turns with your thumb. It reads as
+sitting in a car, which is all it is meant to do yet.
+
+- [ ] **The shapes.** Flat red boxes. This is the piece that wants your eye
+      more than mine — the art target shows the cabin, and every number is in
+      `cockpit/tuning.ts`.
+- [ ] Five-dial binnacle and live needles. `CarView` already carries `rpm`,
+      `maxRpm` and `speedMs`, so the data side is done.
+- [ ] Dial backlighting rising as the ambient light falls. Needs a contract:
+      `world/gen/daylight.ts` knows `instrumentGlow` and the cockpit cannot
+      see it. That seam does not exist yet and is the interesting design
+      question in this phase.
+- [ ] A-pillars, door card, mirror.
+
+## Later — Phase 3: The view *(paused)*
 
 Measured against `docs/reference/art-target.png`. Ordered by how much each
 would close the gap.

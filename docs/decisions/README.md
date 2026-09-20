@@ -22,3 +22,4 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0014](ADR-0014-red-interior.md) | The car is red, not black | Accepted |
 | [0015](ADR-0015-ci-android-builds.md) | The APK is built in CI; the native project is committed | Accepted |
 | [0016](ADR-0016-sound-after-all.md) | There is sound after all — synthesised, no music, no samples | Accepted |
+| [0017](ADR-0017-cockpit-second-pass.md) | The cockpit is a second pass with its own frustum | Accepted |

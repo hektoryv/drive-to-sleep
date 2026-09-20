@@ -18,7 +18,7 @@ its shaders and its tuning constants.
 | **sim** | The car. Vehicle model, attitude, traffic, collision, scoring. | `src/sim/` |
 | **input** | Touch handling, control curves, the dynamic-origin scheme. | `src/input/` |
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
-| **cockpit** | The 911 interior. Dash, wheel, gauges, mirror. | `src/cockpit/` |
+| **cockpit** | The 70s interior. Dash, wheel, gauges, mirror. Drawn in its own pass (ADR-0017). | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
 | **audio** | The engine note, wind and tyres. Synthesised — no samples, no music. | `src/audio/` |
 | **fx** | Particles, camera shake. | `src/fx/` |
@@ -126,6 +126,7 @@ each domain owns its own:
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
 | `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
+| `src/cockpit/tuning.ts` | cabin geometry, wheel, colours, cabin light |
 
 The rule from `05-conventions.md` still holds — no feel or look constant is
 written inline in logic — it just has four homes instead of one.

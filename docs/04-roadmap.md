@@ -133,13 +133,17 @@ popping.
 
 ---
 
-## Phase 4 — The cockpit
+## Phase 4 — The cockpit *(in progress)*
 
 **Goal:** you're sitting in the car.
 
-- [ ] Interior geometry: dash, cowl, A-pillars, door cards, console
-- [ ] Steering wheel: rim, three spokes, hub — rotating with the finger
-- [ ] Five-dial binnacle with correct overlapping layout
+- [x] The second render pass the cabin needs to exist at all (ADR-0017)
+- [x] Steering wheel: rim, three spokes, hub — rotating with the finger
+- [x] Dash mass, blocked in
+- [ ] Interior geometry proper: cowl, A-pillars, door cards, console
+- [ ] Five-dial binnacle with correct overlapping layout. Built and removed in
+      the first pass: a hood with nothing under it reads as a table, and the
+      dimensions were about twice what they should be
 - [ ] Live needles: tach and speedo driven by the sim
 - [ ] Dial backlighting rising with falling ambient light
 - [ ] Glass specular streak across the dial covers

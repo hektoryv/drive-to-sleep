@@ -12,6 +12,7 @@ import type { CarView } from '../contracts/vehicle.js';
 import type { RoadQuery } from '../contracts/world.js';
 import type { ViewState } from '../contracts/view.js';
 import { lookAheadDistance, makeLookAheadRig, updateLookAhead } from './camera.js';
+import { VIEW } from './tuning.js';
 
 export interface ViewModuleOptions {
   /** The app's ViewState. This module writes it; everyone else reads it. */
@@ -57,6 +58,16 @@ export function createViewModule(options: ViewModuleOptions): GameModule {
       view.roll = car.roll;
       view.pitch = car.pitch;
       view.heaveY = car.heaveY;
+
+      // The eye. Offset along the car's own right axis, not the world's, so a
+      // left-hand-drive seat stays on the left whichever way the car points.
+      // Computed here rather than in the renderer so that the cabin and the
+      // camera cannot disagree about where the driver's head is.
+      const sin = Math.sin(car.heading);
+      const cos = Math.cos(car.heading);
+      view.eyeX = car.x + VIEW.EYE_LATERAL * cos;
+      view.eyeY = car.y + VIEW.EYE_HEIGHT + car.heaveY;
+      view.eyeZ = car.z - VIEW.EYE_LATERAL * sin;
     },
 
     setLookAheadEnabled(v: boolean) {
