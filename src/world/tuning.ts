@@ -98,9 +98,56 @@ export const TERRAIN = {
   BLEND_M: 45,
 } as const;
 
+export const SKY = {
+  /** Sky shell radius. Must exceed the furthest ridge layer. */
+  RADIUS_M: 6000,
+  /** How fast the cloud decks slide, in noise units per second. Very slow. */
+  CLOUD_DRIFT: 0.0035,
+} as const;
+
+/**
+ * Distant mountain layers (ADR-0003). Four silhouettes at increasing
+ * distance, each washed further toward the sky colour.
+ */
+export const RIDGES = {
+  LAYERS: 4,
+  /** Vertical strips per layer. More = finer crests, linearly more cost. */
+  COLUMNS: 192,
+  NEAREST_M: 1400,
+  FURTHEST_M: 5200,
+  /**
+   * Peak height above the horizon plane, near layer and far layer. The near
+   * layer at 420 m and 1.4 km away subtends about 17°, which is a proper
+   * mountain rather than a bump on the skyline.
+   */
+  HEIGHT_NEAR_M: 420,
+  HEIGHT_FAR_M: 1500,
+  /**
+   * Metres per noise unit. Has to be well under the layer radius or the whole
+   * ring falls inside one noise period and the range comes out as a single
+   * bulge — larger is *not* lazier here, it is flatter.
+   */
+  SCALE_M: 620,
+  /** How far the curtain hangs below the horizon, covering the terrain's edge. */
+  SKIRT_M: 700,
+  /** Height over which a ridge's base washes into haze. */
+  BASE_FADE_M: 55,
+} as const;
+
 export const TIME = {
   /** Seconds for one full dawn-to-dawn cycle. ~25 minutes. */
   CYCLE_SECONDS: 25 * 60,
   /** Where the cycle starts on a fresh drive. 0 = midnight, 0.25 = dawn. */
   START_PHASE: 0.27,
+} as const;
+
+export const DAY = {
+  /** Sun elevation at noon, radians. A mid-latitude sun, not a tropical one. */
+  MAX_SUN_ELEVATION: 62 * DEG,
+  /**
+   * Where the sun sits at dawn. Chosen so golden hour puts it ahead and
+   * slightly left of a car heading down -Z, which is the art target's
+   * composition. The azimuth sweeps a full turn per day from here.
+   */
+  SUN_AZIMUTH_BASE: 0.63,
 } as const;

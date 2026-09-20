@@ -20,15 +20,25 @@ needs hands on a real build.
       whether it reads as weight or as seasickness *in motion*.
 - [ ] Control radii — `input/tuning.ts`. Do they suit your thumb?
 
-## Next — Phase 3: The view
+## Next — Phase 3: The view *(in progress)*
 
-- [ ] Time-of-day cycle driving sun position and every palette
-- [ ] Sky: sun disc, horizon glow, stars, moon
-- [ ] Height fog on top of the distance fog
-- [ ] Distant mountain impostor layers (also fixes the terrain ribbon edge)
-- [ ] Instanced billboard props with the near-3D cross-fade band
+Measured against `docs/reference/art-target.png`. Ordered by how much each
+would close the gap.
+
+- [x] Time-of-day cycle driving sun position and every palette
+- [x] Sky: four-stop gradient, sun disc, halo, horizon wash, clouds, stars
+- [x] Distant mountain layers with aerial perspective and real parallax
+- [ ] **Biome palettes.** The terrain is hardcoded olive green and clashes with
+      every warm sky. It should read the daylight palette like everything else,
+      and be ochre in the desert.
+- [ ] Vegetation billboards — the dark shrub clusters the target is full of
+- [ ] Roadside furniture: guardrail, chevron signs, telegraph poles
+- [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
+- [ ] Double yellow centre lines rather than a single white one
 - [ ] Biome parameter sets and distance-driven blending
+- [ ] Height fog on top of the distance fog
 - [ ] Colour grading, bloom, vignette, animated dither grain
+- [ ] The moon as a night key light
 - [ ] Quality tiers
 
 ## Later
@@ -62,6 +72,8 @@ Things to resolve before the phase that needs them:
 - **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
   sequence of stills through one corner, which shows where the view ends up but
   not how it gets there. Needs hands on a device.
+- **Cloud shape control** (Phase 3): cover, softness and the two decks' scales
+  are tuned by eye against one reference. Worth a sweep sheet of its own.
 - **A car body for the chase camera** (Phase 4): the chase view shows the road
   and the line, but with no geometry there is nothing to watch lean. It belongs
   to `cockpit/`; building a throwaway box now is not worth a domain.

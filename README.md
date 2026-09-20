@@ -32,6 +32,8 @@ npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner
 npm run lint                                  # also checks the architecture
 npm run shoot -- --handling                   # the car caught mid-corner
 npm run telemetry                             # drive, and print what it did
+npm run shoot -- --sheet                      # the whole day, one sheet
+npm run shoot -- --at 200 --time golden       # the art target's moment
 ```
 
 ## Where things are
@@ -45,6 +47,7 @@ npm run telemetry                             # drive, and print what it did
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases, tasks, exit criteria |
 | [docs/05-conventions.md](docs/05-conventions.md) | Code style, tuning policy, testing, definition of done |
 | [docs/06-modules.md](docs/06-modules.md) | Domain ownership, module lifecycle, working in parallel |
+| [docs/reference/art-target.png](docs/reference/art-target.png) | The picture this is trying to be |
 | [docs/decisions/](docs/decisions/) | Locked decisions, one file each, with the reasoning |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Append-only log of what actually happened |
 | [docs/TODO.md](docs/TODO.md) | Live backlog |

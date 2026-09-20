@@ -7,6 +7,114 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-20 — Phase 3 begins: the sky, and a target to aim at
+
+An art target arrived: `docs/reference/art-target.png`, "basically what I want
+it to look like in the end". That changes the phase from a judgement call into
+something measurable, so the first thing I did was read it rather than build
+from it.
+
+**What the reference actually says** (written up in `02-art-direction.md`):
+the sky is a *four*-stop gradient, not two; everything lit is warm and
+everything in shadow is violet; clouds are flat hard-edged slabs rather than
+soft ones; the horizon has four or five receding ranges; roadside furniture is
+structural, not dressing; and the car is **red**.
+
+I sampled the golden-hour gradient straight off it — `#7a74ac` zenith through
+`#c9717b` to `#f9814c` horizon — and that is now the 0.735 keyframe everything
+else is built around.
+
+### Built
+
+- **`world/gen/daylight.ts`** — ten keyframes, a dozen colours each, blended
+  with smootherstep. One phase value drives the sun's position and every colour
+  in the world: sky, fog, ambient, the light on the terrain, the distant
+  ranges, and from Phase 4 the dashboard. Pure, and tested.
+- **A new sky shader** — four-stop gradient, sun disc, halo, a directional
+  horizon wash, stars, and two cloud decks. The clouds are noise thresholded
+  *hard* with a second threshold inside the shape, which is where the
+  cut-paper look comes from. All of it is one shader on one sphere: one draw
+  call, clouds included, no textures.
+- **`world/view/ridges.ts`** — four layered mountain silhouettes with aerial
+  perspective. The ridge height at a bearing is sampled from the world point
+  that bearing aims at, so the layers have real parallax against each other
+  instead of being painted on.
+- **ADR-0014**, because the reference overturns ADR-0007's black cabin.
+
+### The bug that ate the afternoon
+
+The ridges rendered nothing for about two hours of work. Draw calls were being
+issued (3 → 7), the geometry was correct when read back out of the buffer, the
+shader compiled without error, and a hardcoded triangle in the same mesh drew
+fine.
+
+The cause: **`Group.renderOrder` in three.js is not a hint, it is the
+`groupOrder` of everything beneath it, and `groupOrder` is compared *before*
+each object's own `renderOrder`.** I had set `group.renderOrder = -0.5` on the
+ridge group meaning "slightly behind". What it actually did was promote all
+four layers ahead of the sky in the sort — and the sky is a full-screen shell
+that writes no depth, so it painted straight over them. Four invisible draw
+calls, no error anywhere.
+
+Three things about how that went that are worth keeping:
+
+- **I theorised for far too long before measuring.** Every hypothesis was
+  plausible and none was testable from the picture. The things that actually
+  moved it forward were reading the geometry back out of `geometry.attributes`
+  in the page, and hiding the terrain and road to see the ridges alone.
+- **My first instrument was wrong and I trusted it.** I forced the shader to
+  output pure red and counted red pixels — but ACES tonemapping turns pure red
+  into `#e86640`, so the detector missed it *and* an orange sunset sky would
+  have hidden it from my eye too. A detector that can return a false negative
+  is worse than no detector.
+- **The bisect that finally worked was subtractive**, not additive: take the
+  scene away until only the suspect is left.
+
+### Three more real bugs, all found by looking
+
+1. **The sky sphere was outside the far plane.** Radius 6000, far plane 4000 —
+   the world rendered against black. Far plane is now 12000 and the near plane
+   moved from 0.1 to 0.25 to buy back the depth precision.
+2. **Every palette colour was being read as linear when it was authored in
+   sRGB.** `THREE.Color.setRGB` defaults to the renderer's working space, so
+   every mid-tone came out about twice as bright and the whole sky was pastel.
+   Now converted in one shared helper rather than remembered per call site.
+3. **The sun azimuth swept 180° per day instead of 360°**, so it snapped
+   through half a turn at midnight. Invisible in a still, a hard cut in a long
+   drive. Caught by a test, not by an eye.
+
+And one that was only a shape problem: the ridge noise collapsed x and z onto a
+single diagonal at a 2600 m scale, so the entire horizon fell inside about one
+noise period and the "mountains" came out as one gentle bulge, identical on
+opposite sides. Properly 2D now, at 620 m.
+
+### One optimisation deleted
+
+The ridges were rebuilt only after the camera had moved a few metres, which is
+the obvious optimisation. It was also silently keeping them stale, and four
+invisible layers are not cheaper than four visible ones. Rebuilt every frame
+now — about 1,500 vertices of 1D noise. Measure before optimising; I did not,
+and it cost more than it saved.
+
+### Where it stands
+
+The day cycle runs end to end and the keyframes join up — stars to dawn glow to
+clean daylight to golden hour to twilight, shot in one sheet. Mountains recede
+properly into haze. The structure of the target is there.
+
+What is not there yet, in rough order of how much it would close the gap:
+
+- **Biome palettes.** The terrain is still hardcoded olive green and clashes
+  badly with a sunset. It should be ochre at golden hour, and it should be
+  reading the daylight palette like everything else.
+- **Vegetation and roadside furniture** — the shrubs, guardrail, chevron sign
+  and telegraph poles that give the road somewhere to be.
+- **Harder cloud edges.** Mine are softer than the target's cut-paper slabs.
+- **Double yellow centre lines** rather than the single white one.
+- The cockpit, which is Phase 4 and is now red.
+
+---
+
 ## 2026-09-18 — Phase 2: the drive
 
 The car exists. Handling model, attitude springs, one-finger controls, an

@@ -31,7 +31,8 @@ export interface ShotState {
   seed: number;
   /** Distance to fast-forward to before shooting, in metres. */
   at: number;
-  time: 'day' | 'dusk' | 'night';
+  /** A named moment or a raw 0–1 phase. See MOMENTS in src/main.ts. */
+  time: string;
   debug: boolean;
   /** Framing overrides for a tuning sweep. Degrees for fov; fractions otherwise. */
   fov?: number;

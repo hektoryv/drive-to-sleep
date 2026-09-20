@@ -55,8 +55,18 @@ export const VIEW = {
   /** Eye offset from the car's centreline, metres. Negative = left-hand drive. */
   EYE_LATERAL: -0.36,
 
-  NEAR_PLANE: 0.1,
-  FAR_PLANE: 4000,
+  /**
+   * The near plane sits at 0.25 m rather than 0.1: nothing is closer than the
+   * dashboard, and every halving of the near plane costs depth precision
+   * across the entire rest of the range.
+   */
+  NEAR_PLANE: 0.25,
+  /**
+   * Far enough to contain the sky shell and the furthest ridge layer. This has
+   * to exceed `SKY.RADIUS_M` — when it did not, the sky was clipped away
+   * entirely and the world rendered against black.
+   */
+  FAR_PLANE: 12000,
 } as const;
 
 // ---------------------------------------------------------------------------

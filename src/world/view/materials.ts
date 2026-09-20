@@ -13,6 +13,19 @@
 
 import * as THREE from 'three';
 
+/**
+ * Writes an authored palette colour into a THREE.Color.
+ *
+ * Palette values are sRGB — they were sampled off an image — but `setRGB`
+ * defaults to the renderer's *linear* working space. Passing them through
+ * unconverted reads every mid-tone about twice as bright as intended and
+ * washes the whole scene out to pastel. This exists so that conversion lives
+ * in one place rather than being remembered at each call site.
+ */
+export function setSrgb(target: THREE.Color, c: { r: number; g: number; b: number }): void {
+  target.setRGB(c.r, c.g, c.b, THREE.SRGBColorSpace);
+}
+
 /** Uniforms shared by every world surface, so sun and fog can never disagree. */
 export interface WorldUniforms {
   uSunDir: { value: THREE.Vector3 };

@@ -44,15 +44,14 @@ function optionalNumber(key: string): number | undefined {
   return Number.isFinite(v) ? v : undefined;
 }
 
-/** The matrix a contact sheet covers. Widens as the phases land. */
-const SHEET_MATRIX: ShotState[] = [
-  { seed: 1, at: 0, time: 'day', debug: false },
-  { seed: 1, at: 500, time: 'day', debug: false },
-  { seed: 7, at: 1200, time: 'dusk', debug: false },
-  { seed: 7, at: 1200, time: 'night', debug: false },
-  { seed: 3, at: 5000, time: 'day', debug: true },
-  { seed: 3, at: 5000, time: 'dusk', debug: true },
-];
+/**
+ * The day, at one place. The sky carries most of the mood in this game
+ * (ADR-0007), so the sheet that matters most is the same view at every hour —
+ * it shows whether the palette keyframes actually join up.
+ */
+const SHEET_MATRIX: ShotState[] = (
+  ['predawn', 'dawn', 'morning', 'noon', 'afternoon', 'golden', 'sunset', 'dusk', 'twilight', 'night'] as const
+).map((time) => ({ seed: 1, at: 1400, time, debug: false, label: time }));
 
 /**
  * A sweep for judging the portrait framing by eye. Held at the same point on
@@ -86,7 +85,7 @@ function sequenceMatrix(): ShotState[] {
     out.push({
       seed: Number(args.get('seed') ?? 1),
       at,
-      time: (args.get('time') ?? 'day') as ShotState['time'],
+      time: args.get('time') ?? 'golden',
       debug,
       look,
       label: `${at}m${look ? '' : ' no-look'}`,
@@ -133,7 +132,7 @@ async function main(): Promise<void> {
   const single: ShotState = {
     seed: Number(args.get('seed') ?? 1),
     at: Number(args.get('at') ?? 0),
-    time: (args.get('time') ?? 'day') as ShotState['time'],
+    time: args.get('time') ?? 'golden',
     debug,
   };
   const fov = optionalNumber('fov');

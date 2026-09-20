@@ -30,6 +30,13 @@ export interface TestApi {
   /** Overrides the finger with fixed control values. null returns control. */
   setScriptedInput(input: { steer: number; throttle: number; brake: number } | null): void;
   setCameraMode(mode: CameraMode): void;
+  /**
+   * Sets the time of day. 0 = midnight, 0.25 = dawn, 0.5 = noon,
+   * 0.76 = golden hour (the art target), 0.88 = twilight.
+   * Also freezes the clock, so a shot lands exactly where it was asked for.
+   */
+  setTime(phase: number): void;
+  setTimeFrozen(frozen: boolean): void;
   /** Everything the handling is doing right now. */
   telemetry(): {
     distanceM: number;
@@ -97,6 +104,10 @@ interface ScriptCapable {
 interface LookAheadCapable {
   setLookAheadEnabled(v: boolean): void;
 }
+interface TimeCapable {
+  setTimePhase(phase: number): void;
+  setTimeFrozen(frozen: boolean): void;
+}
 
 export function installTestApi(app: App, ready: Promise<void>): TestApi {
   const setAutopilot = (enabled: boolean): void => {
@@ -127,6 +138,15 @@ export function installTestApi(app: App, ready: Promise<void>): TestApi {
       moduleAs<ScriptCapable>(app, 'input')?.setScriptedInput?.(input);
     },
     setCameraMode: (mode) => app.setCameraMode(mode),
+
+    setTime(phase: number) {
+      const world = moduleAs<TimeCapable>(app, 'world');
+      world?.setTimeFrozen?.(true);
+      world?.setTimePhase?.(phase);
+    },
+    setTimeFrozen(frozen: boolean) {
+      moduleAs<TimeCapable>(app, 'world')?.setTimeFrozen?.(frozen);
+    },
 
     telemetry() {
       const c = app.car;

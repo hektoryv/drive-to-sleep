@@ -86,6 +86,31 @@ const ready = new Promise<void>((resolve) => {
 const api = installTestApi(app, ready);
 if (params.get('look') === '0') api.setLookAheadEnabled(false);
 if (params.get('cam') === 'chase') api.setCameraMode('chase');
+
+/** Named moments, so a URL can say `?time=golden` instead of `?time=0.76`. */
+const MOMENTS: Record<string, number> = {
+  midnight: 0.0,
+  predawn: 0.19,
+  dawn: 0.25,
+  morning: 0.34,
+  noon: 0.5,
+  afternoon: 0.66,
+  /** Sun ~2° up: the art target's moment. */
+  golden: 0.735,
+  /** Sun exactly on the horizon. */
+  sunset: 0.75,
+  dusk: 0.79,
+  twilight: 0.86,
+  night: 0.95,
+  // Phase 0's three moods, kept so old commands still mean something.
+  day: 0.5,
+};
+const timeParam = params.get('time');
+if (timeParam !== null) {
+  const named = MOMENTS[timeParam];
+  const phase = named ?? Number(timeParam);
+  if (Number.isFinite(phase)) api.setTime(phase);
+}
 if (params.get('auto') === '1') api.setAutopilot(true);
 
 app.start();

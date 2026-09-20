@@ -1,17 +1,27 @@
 /**
- * The sky, and the fog colour derived from it.
+ * The sky: gradient, sun, clouds, stars.
  *
- * Fog is not a draw-distance trick here — it is the main depth cue and the
- * main mood control (docs/02-art-direction.md), which is why its colour comes
- * from the sky rather than from a constant. Where the two disagree you get a
- * visible band at the horizon; where they agree the world simply recedes.
+ * Carries most of the mood in the game, and per ADR-0007 most of the
+ * good-lookingness too. Three things it does that the Phase 1 placeholder
+ * did not, all taken from the art target:
  *
- * Phase 1 holds a single fixed daytime palette. Phase 3 drives these same
- * uniforms from the time-of-day cycle — the shader does not need to change.
+ * 1. **Four gradient stops, not two.** The violet-to-orange transit at dusk
+ *    is the whole picture, and it cannot be expressed as one blend.
+ * 2. **A visible sun disc with a halo**, which is what makes the sky a place
+ *    with a light source in it rather than a coloured backdrop.
+ * 3. **Flat, hard-edged clouds.** The art target's clouds are cut-paper
+ *    slabs — quantised, horizontal, unmistakably graphic. That look comes
+ *    from thresholding noise *hard*; soft fluffy clouds would put a different
+ *    game behind the windscreen.
+ *
+ * All of it is one shader on one sphere. No geometry, no textures, one draw
+ * call — clouds included.
  */
 
 import * as THREE from 'three';
-import type { WorldUniforms } from './materials.js';
+import type { SkyPalette } from '../gen/daylight.js';
+import { SKY } from '../tuning.js';
+import { setSrgb, type WorldUniforms } from './materials.js';
 
 const SKY_VERT = /* glsl */ `
   varying vec3 vDir;
@@ -24,23 +34,134 @@ const SKY_VERT = /* glsl */ `
 
 const SKY_FRAG = /* glsl */ `
   uniform vec3 uZenith;
+  uniform vec3 uUpper;
+  uniform vec3 uMid;
   uniform vec3 uHorizon;
-  uniform vec3 uGround;
+  uniform vec3 uSunDisc;
+  uniform vec3 uSunHalo;
+  uniform vec3 uCloudLit;
+  uniform vec3 uCloudShadow;
+  uniform vec3 uSunDir;
+  uniform float uCloudCover;
+  uniform float uStars;
+  uniform float uDrift;
   varying vec3 vDir;
 
-  void main() {
-    float h = vDir.y;
-    vec3 col;
-    if (h >= 0.0) {
-      // Biased upward so the bright horizon band stays tight rather than
-      // washing halfway up the sky.
-      col = mix(uHorizon, uZenith, pow(clamp(h, 0.0, 1.0), 0.45));
-    } else {
-      // Held at the horizon colour well below the horizon line: terrain is
-      // clipped by the far plane while fog has already resolved it to exactly
-      // this colour, and any disagreement shows up as a band under the horizon.
-      col = mix(uHorizon, uGround, pow(clamp(-h, 0.0, 1.0), 2.2));
+  // --- noise -------------------------------------------------------------
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
+  float valueNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm(vec2 p) {
+    float sum = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 4; i++) {
+      sum += valueNoise(p) * amp;
+      p *= 2.07;
+      amp *= 0.5;
     }
+    return sum;
+  }
+
+  // --- gradient ----------------------------------------------------------
+
+  // Four stops, each reached at a hand-placed height rather than evenly, so
+  // the warm band stays pinned near the horizon instead of washing upward.
+  vec3 skyGradient(float h) {
+    float t = clamp(h, 0.0, 1.0);
+    if (t < 0.10) return mix(uHorizon, uMid, smoothstep(0.0, 0.10, t));
+    if (t < 0.32) return mix(uMid, uUpper, smoothstep(0.10, 0.32, t));
+    return mix(uUpper, uZenith, smoothstep(0.32, 0.85, t));
+  }
+
+  // --- clouds ------------------------------------------------------------
+
+  // Two decks at different scales, both flattened hard in elevation so they
+  // read as horizontal slabs rather than blobs, and both thresholded with a
+  // narrow band so the edges come out crisp.
+  vec4 cloudLayer(float azimuth, float elevation, float scale, float squash,
+                  float drift, float cover, float softness) {
+    vec2 uv = vec2(azimuth * scale + drift, elevation * scale * squash);
+    float n = fbm(uv);
+    float edge = 1.0 - cover;
+    float mask = smoothstep(edge, edge + softness, n);
+    // A second, coarser threshold inside the shape gives the stepped
+    // interior the art target has — clouds lit in two flat tones, not a ramp.
+    float core = smoothstep(edge + softness * 1.6, edge + softness * 3.0, n);
+    return vec4(mask, core, n, 0.0);
+  }
+
+  void main() {
+    vec3 dir = normalize(vDir);
+    float h = dir.y;
+
+    vec3 col = skyGradient(h * 1.15);
+
+    // Below the horizon, hold the horizon colour rather than fading to a
+    // ground tone: terrain and ridges cover this, and any disagreement shows
+    // up as a band exactly at the skyline.
+    if (h < 0.0) col = mix(uHorizon, col, exp(h * 14.0));
+
+    float sunDot = dot(dir, uSunDir);
+
+    // Halo first, so the disc sits inside its own glow.
+    float halo = pow(max(sunDot, 0.0), 220.0) * 0.55 + pow(max(sunDot, 0.0), 14.0) * 0.30;
+    col += uSunHalo * halo;
+
+    // A wide, low wash along the horizon on the sun's side. This is what
+    // makes a sunset look like it has a direction.
+    float towardSun = max(dot(normalize(vec3(dir.x, 0.0, dir.z)),
+                              normalize(vec3(uSunDir.x, 0.0, uSunDir.z))), 0.0);
+    float horizonGlow = pow(towardSun, 3.0) * exp(-abs(h) * 7.0) * 0.35;
+    col += uSunHalo * horizonGlow;
+
+    // Stars, before the clouds so the clouds occlude them.
+    if (uStars > 0.001 && h > -0.02) {
+      vec2 sp = vec2(atan(dir.z, dir.x) * 9.0, asin(clamp(h, -1.0, 1.0)) * 9.0);
+      float s = hash(floor(sp * 12.0));
+      float star = smoothstep(0.9965, 0.9995, s) * smoothstep(0.0, 0.25, h);
+      col += vec3(star) * uStars;
+    }
+
+    // Clouds. Elevation is used directly rather than via an angle so the
+    // decks stay flat overhead instead of converging at the zenith.
+    float azimuth = atan(dir.z, dir.x);
+    float elevation = h;
+
+    if (elevation > -0.03) {
+      // High deck: fine, fast, catches the light first.
+      vec4 high = cloudLayer(azimuth, elevation, 1.35, 4.2, uDrift * 0.6,
+                             uCloudCover * 0.85, 0.055);
+      // Low deck: broad slabs sitting on the horizon.
+      vec4 low = cloudLayer(azimuth + 2.4, elevation, 0.75, 7.5, uDrift,
+                            uCloudCover, 0.04);
+
+      // Both fade out near the horizon, where a cloud would be too far away
+      // to resolve, and thin toward the zenith.
+      float band = smoothstep(0.0, 0.10, elevation) * (1.0 - smoothstep(0.45, 0.95, elevation));
+
+      float lit = clamp(towardSun * 1.3, 0.0, 1.0);
+      vec3 highCol = mix(uCloudShadow, uCloudLit, clamp(high.y + lit * 0.55, 0.0, 1.0));
+      vec3 lowCol = mix(uCloudShadow, uCloudLit, clamp(low.y * 0.8 + lit * 0.8, 0.0, 1.0));
+
+      col = mix(col, lowCol, low.x * band * 0.92);
+      col = mix(col, highCol, high.x * band * 0.7);
+    }
+
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -51,35 +172,85 @@ export interface Sky {
   readonly mesh: THREE.Mesh;
   /** Keeps the shell centred on the camera so it never feels like a room. */
   follow(x: number, y: number, z: number): void;
+  /** Pushes the current palette and sun direction into the shader. */
+  apply(palette: Readonly<SkyPalette>, sunX: number, sunY: number, sunZ: number): void;
+  /** Advances the slow cloud drift. */
+  step(dt: number): void;
   dispose(): void;
 }
 
+function uniformColor(): { value: THREE.Color } {
+  return { value: new THREE.Color() };
+}
+
 export function createSky(shared: WorldUniforms): Sky {
-  const horizon = new THREE.Color(0xbcd0dc);
+  const u = {
+    uZenith: uniformColor(),
+    uUpper: uniformColor(),
+    uMid: uniformColor(),
+    uHorizon: uniformColor(),
+    uSunDisc: uniformColor(),
+    uSunHalo: uniformColor(),
+    uCloudLit: uniformColor(),
+    uCloudShadow: uniformColor(),
+    uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+    uCloudCover: { value: 0.4 },
+    uStars: { value: 0 },
+    uDrift: { value: 0 },
+  };
+
   const material = new THREE.ShaderMaterial({
     vertexShader: SKY_VERT,
     fragmentShader: SKY_FRAG,
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: {
-      uZenith: { value: new THREE.Color(0x2c5f96) },
-      uHorizon: { value: horizon },
-      uGround: { value: new THREE.Color(0x6a7358) },
-    },
+    uniforms: u,
   });
 
-  // The fog resolves to the sky's horizon colour, from the one source.
-  shared.uFogColor.value.copy(horizon);
-
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(3000, 32, 16), material);
-  mesh.renderOrder = -1;
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(SKY.RADIUS_M, 48, 24), material);
+  // Drawn before everything, including the ridges that sit in front of it.
+  mesh.renderOrder = -100;
   mesh.frustumCulled = false;
+
+  let drift = 0;
 
   return {
     mesh,
+
     follow(x, y, z) {
       mesh.position.set(x, y, z);
     },
+
+    apply(palette, sunX, sunY, sunZ) {
+      setSrgb(u.uZenith.value, palette.zenith);
+      setSrgb(u.uUpper.value, palette.upper);
+      setSrgb(u.uMid.value, palette.mid);
+      setSrgb(u.uHorizon.value, palette.horizon);
+      setSrgb(u.uSunDisc.value, palette.sunDisc);
+      setSrgb(u.uSunHalo.value, palette.sunHalo);
+      setSrgb(u.uCloudLit.value, palette.cloudLit);
+      setSrgb(u.uCloudShadow.value, palette.cloudShadow);
+      u.uSunDir.value.set(sunX, sunY, sunZ);
+      u.uCloudCover.value = palette.cloudCover;
+      u.uStars.value = palette.starIntensity;
+
+      // The fog colour is the sky's horizon colour, from this one place.
+      // Anything else puts a visible seam at the skyline.
+      shared.uFogColor.value.copy(u.uHorizon.value);
+      shared.uFogDensity.value = palette.fogDensity;
+      setSrgb(shared.uSunColor.value, palette.sunLight);
+      setSrgb(shared.uAmbient.value, palette.ambient);
+      // Light comes *from* the sun, so the shading vector points at it. Held
+      // just above the horizon: once the sun sets the terrain should go to
+      // ambient, not light itself from below.
+      shared.uSunDir.value.set(sunX, Math.max(sunY, 0.04), sunZ).normalize();
+    },
+
+    step(dt) {
+      drift += dt * SKY.CLOUD_DRIFT;
+      u.uDrift.value = drift;
+    },
+
     dispose() {
       mesh.geometry.dispose();
       material.dispose();

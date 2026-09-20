@@ -139,20 +139,33 @@ get through.
 
 ## Time of day
 
-One full cycle is ~25 minutes of driving. It runs continuously and
+One full cycle is ~25 minutes of driving, running continuously and
 independently of the biome cycle, so the combinations are never the same twice.
 
-| Phase | Sky | Sun | Fog | Interior |
-|---|---|---|---|---|
-| Dawn | Cold violet → peach | Low, warm, long shadows | Thick, blue, ground-hugging | Dials fading down |
-| Morning | Clean blue gradient | High, neutral, crisp | Thin | Dials off |
-| Afternoon | Warm blue, haze | High, slightly warm | Medium, warm | Dials off |
-| Golden hour | Amber → rose → indigo | Very low, very warm, rim-lighting everything | Thick, golden, volumetric | Dials coming up |
-| Dusk | Deep orange band under indigo | Below horizon, sky-glow only | Deep, cool | Dials warm, cabin mostly dark |
-| Night | Near-black blue, stars, moon | Moon key light, very dim | Deep, headlight cone reads | Dials the only light; headlight wash on the road |
+**Built.** Ten keyframes in `world/gen/daylight.ts`, each about a dozen
+colours, blended with smootherstep. One phase value drives the sun's position
+and every colour in the world — sky, fog, ambient, the light on the terrain,
+the distant ranges, and from Phase 4 the dashboard. Nothing else decides what
+colour anything is, which is what stops them drifting apart.
 
-Night is the hardest and the most rewarding. Budget real time for it in Phase 7
-rather than trying to get it right in Phase 3.
+| Moment | Phase | Character |
+|---|---|---|
+| Midnight | 0.00 | Near-black blue, stars out, instruments the only light |
+| Pre-dawn | 0.19 | First violet, a rose band low down |
+| Dawn | 0.25 | Sun on the horizon, peach against cold violet |
+| Morning | 0.34 | Clean, cool, crisp |
+| Noon | 0.50 | Blue gradient, pale horizon, thin fog |
+| Afternoon | 0.66 | Warming, haze building |
+| **Golden** | **0.735** | **The art target.** Sun ~2° up, violet zenith, orange horizon |
+| Sunset | 0.75 | Sun exactly on the horizon |
+| Dusk | 0.79 | Sun below, deep orange band under indigo |
+| Twilight | 0.86 | Rose remnant, first stars |
+
+Shoot the whole day at once with `npm run shoot -- --sheet`. That sheet is the
+one that matters most: it shows whether the keyframes actually join up.
+
+Night is still the hardest. Headlights, the moon as a key light and the
+headlight cone are Phase 7, not Phase 3.
 
 ## Rendering approach — hybrid 3D / 2.5D
 
