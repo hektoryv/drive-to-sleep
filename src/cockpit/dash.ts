@@ -17,6 +17,8 @@ import { createCabinMaterial } from './materials.js';
 
 export interface Dash {
   readonly object: THREE.Object3D;
+  /** So the module can point them all at the sun each frame. */
+  readonly materials: readonly THREE.ShaderMaterial[];
   dispose(): void;
 }
 
@@ -95,6 +97,7 @@ export function createDash(): Dash {
 
   return {
     object: root,
+    materials: [leather, leatherDark],
     dispose() {
       for (const g of geometries) g.dispose();
       leather.dispose();

@@ -18,6 +18,8 @@ import { createCabinMaterial } from './materials.js';
 
 export interface SteeringWheel {
   readonly object: THREE.Object3D;
+  /** So the module can point them all at the sun each frame. */
+  readonly materials: readonly THREE.ShaderMaterial[];
   /** `steerAngle` is the road wheel angle, radians. */
   setSteer(steerAngle: number): void;
   dispose(): void;
@@ -75,6 +77,7 @@ export function createSteeringWheel(): SteeringWheel {
 
   return {
     object: mount,
+    materials: [rimMaterial, alloyMaterial],
 
     setSteer(steerAngle: number) {
       // Negated: turning the road wheels right is a clockwise turn of the rim,

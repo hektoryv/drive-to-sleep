@@ -32,10 +32,9 @@ sitting in a car, which is all it is meant to do yet.
       `cockpit/tuning.ts`.
 - [ ] Five-dial binnacle and live needles. `CarView` already carries `rpm`,
       `maxRpm` and `speedMs`, so the data side is done.
-- [ ] Dial backlighting rising as the ambient light falls. Needs a contract:
-      `world/gen/daylight.ts` knows `instrumentGlow` and the cockpit cannot
-      see it. That seam does not exist yet and is the interesting design
-      question in this phase.
+- [x] The `daylight` contract — the cabin is lit by the same sun as the road
+- [ ] Dial backlighting, reading `daylight.instrumentGlow`. The contract now
+      carries it; nothing consumes it, so the cabin goes black at night.
 - [ ] A-pillars, door card, mirror.
 
 ## Later — Phase 3: The view *(paused)*

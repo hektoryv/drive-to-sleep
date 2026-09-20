@@ -5,16 +5,33 @@
  * the same way and the cabin reads as one moulded object rather than as a
  * collection of props.
  *
- * Self-contained on purpose: no scene lights. three.js lights are global to a
- * scene, and a domain that is supposed to be sealed has no business changing
- * how anything else is lit. The key direction lives in the eye frame, which is
- * also the frame the cabin is authored in, so it stays put as the car moves —
- * a cabin whose shading swung about with the heading would read as the whole
- * car rotating inside itself.
+ * No scene lights: three.js lights are global to a scene, and a domain that is
+ * supposed to be sealed has no business changing how anything else is lit. The
+ * key is a uniform instead, and the cockpit module points it at the sun.
+ *
+ * The direction is in the **cabin's own frame**, so it is the sun as seen from
+ * the driver's seat: drive into a sunset and the dash lights from the front;
+ * turn away from it and the cabin falls to ambient. That is the whole reason
+ * the `daylight` contract exists — an interior lit by a fixed lamp looks wrong
+ * the moment the road outside turns orange.
  */
 
 import * as THREE from 'three';
 import { CABIN_LIGHT } from './tuning.js';
+import type { Rgb } from '../contracts/daylight.js';
+
+/**
+ * Writes a palette colour into a THREE.Color as sRGB.
+ *
+ * `world/view/materials.ts` has the same three lines and the same comment, and
+ * they stay separate: domains do not import one another (ADR-0011), and a
+ * shared utility module for one call is a worse trade than the duplication.
+ * Palette values are sRGB — `setRGB` would otherwise read them as linear and
+ * every mid-tone comes out about twice as bright as intended.
+ */
+export function setSrgb(target: THREE.Color, c: Rgb): void {
+  target.setRGB(c.r, c.g, c.b, THREE.SRGBColorSpace);
+}
 
 const VERT = /* glsl */ `
   varying vec3 vNormalLocal;
@@ -31,7 +48,9 @@ const VERT = /* glsl */ `
 const FRAG = /* glsl */ `
   uniform vec3 uAlbedo;
   uniform vec3 uKey;
+  uniform vec3 uKeyColour;
   uniform float uKeyStrength;
+  uniform vec3 uAmbientColour;
   uniform float uAmbient;
   varying vec3 vNormalLocal;
   varying vec3 vLocal;
@@ -42,7 +61,7 @@ const FRAG = /* glsl */ `
     // Half-lambert, as everywhere else in this game (ADR-0007): the unlit side
     // lifts toward ambient rather than going black.
     float ndl = dot(n, normalize(uKey)) * 0.5 + 0.5;
-    float lit = uAmbient + uKeyStrength * ndl * ndl;
+    vec3 lit = uAmbientColour * uAmbient + uKeyColour * (uKeyStrength * ndl * ndl);
 
     // Everything in the cabin gets darker toward the bottom of the frame,
     // which is the one cue that the light is coming from the windscreen. It
@@ -65,8 +84,33 @@ export function createCabinMaterial(colour: number): THREE.ShaderMaterial {
       uKey: {
         value: new THREE.Vector3(CABIN_LIGHT.KEY[0], CABIN_LIGHT.KEY[1], CABIN_LIGHT.KEY[2]),
       },
+      uKeyColour: { value: new THREE.Color(0xfff0dc) },
       uKeyStrength: { value: CABIN_LIGHT.KEY_STRENGTH },
+      uAmbientColour: { value: new THREE.Color(0x5a6b82) },
       uAmbient: { value: CABIN_LIGHT.AMBIENT },
     },
   });
+}
+
+/**
+ * Points every cabin material at the sun at once.
+ *
+ * The sun is held above the cabin's horizontal however low it really is: once
+ * it sets, an interior should fall to ambient rather than start being lit from
+ * under the floor. Same guard the terrain uses (`world/view/sky.ts`).
+ */
+export function applyCabinLight(
+  materials: readonly THREE.ShaderMaterial[],
+  sun: THREE.Vector3,
+  key: THREE.Color,
+  ambient: THREE.Color,
+  strength: number,
+): void {
+  for (const m of materials) {
+    const dir = m.uniforms.uKey?.value as THREE.Vector3 | undefined;
+    if (dir !== undefined) dir.copy(sun);
+    (m.uniforms.uKeyColour?.value as THREE.Color | undefined)?.copy(key);
+    (m.uniforms.uAmbientColour?.value as THREE.Color | undefined)?.copy(ambient);
+    if (m.uniforms.uKeyStrength !== undefined) m.uniforms.uKeyStrength.value = strength;
+  }
 }

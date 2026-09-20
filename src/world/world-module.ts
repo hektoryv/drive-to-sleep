@@ -11,9 +11,11 @@
 import * as THREE from 'three';
 import type { GameModule, ModuleContext } from '../contracts/module.js';
 import type { CarView } from '../contracts/vehicle.js';
+import type { DaylightView } from '../contracts/daylight.js';
 import type { ViewState } from '../contracts/view.js';
 import { ROAD, TIME } from './tuning.js';
 import {
+  daylightAt,
   makeSkyPalette,
   makeSunDirection,
   paletteAt,
@@ -82,6 +84,38 @@ export function createWorldModule(): WorldModule {
   const ridgeNear = new THREE.Color();
   const ridgeFar = new THREE.Color();
 
+  /**
+   * The `daylight` service. A live view onto the same palette the sky is
+   * drawn from — getters rather than a copy, so a consumer reading it during
+   * `frame()` sees this frame's values and nothing has to be kept in step.
+   */
+  const daylightView: DaylightView = {
+    get phase() {
+      return timePhase;
+    },
+    get sunX() {
+      return sun.x;
+    },
+    get sunY() {
+      return sun.y;
+    },
+    get sunZ() {
+      return sun.z;
+    },
+    get sunLight() {
+      return palette.sunLight;
+    },
+    get ambient() {
+      return palette.ambient;
+    },
+    get daylight() {
+      return daylightAt(timePhase);
+    },
+    get instrumentGlow() {
+      return palette.instrumentGlow;
+    },
+  };
+
   function applyDaylight(): void {
     if (sky === undefined) return;
     paletteAt(timePhase, palette);
@@ -134,6 +168,7 @@ export function createWorldModule(): WorldModule {
       ctx = context;
       road = createRoad(context.seed);
       context.services.provide('road', road);
+      context.services.provide('daylight', daylightView);
 
       uniforms = createWorldUniforms();
       roadMaterial = createRoadMaterial(uniforms);

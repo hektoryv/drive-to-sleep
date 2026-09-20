@@ -110,6 +110,12 @@ Adding a key here means a new cross-domain capability exists. Exactly one
 domain provides each service; providing one twice is an error at startup, with
 a message saying so.
 
+There are four: `road` and `daylight` from `world/`, `car` from `sim/`, and
+`controls` from `input/`. `daylight` was the most recent and is a good example
+of when a key is earned — the cabin has to be lit by the same sun as the road,
+and no amount of local cleverness in `cockpit/` can work out what colour that
+sun is.
+
 **3. `src/app/modules.ts`** — the manifest.
 One line per domain. Adding a domain touches this file and nothing else.
 

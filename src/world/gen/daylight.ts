@@ -21,14 +21,15 @@
  * `docs/reference/art-target.png` and is the one the others are built around.
  */
 
+import type { Rgb } from '../../contracts/daylight.js';
 import { clamp, lerp, smootherstep } from '../../core/math.js';
 import { DAY } from '../tuning.js';
 
-export interface Rgb {
-  r: number;
-  g: number;
-  b: number;
-}
+/**
+ * Re-exported rather than declared, so the palette and the `daylight` contract
+ * cannot end up with two subtly different notions of a colour.
+ */
+export type { Rgb };
 
 /** Every colour the world needs at one moment. Mutated in place; never retained. */
 export interface SkyPalette {

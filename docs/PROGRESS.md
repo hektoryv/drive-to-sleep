@@ -997,3 +997,56 @@ more than mine — the art target shows the interior, and the whole point of
 it is. `world/gen/daylight.ts` already computes `instrumentGlow` for exactly
 this and the cockpit cannot see it; that seam is the interesting design
 question in this phase.
+
+---
+
+## 2026-09-20 — The cabin is lit by the same sun as the road
+
+**Built:** the `daylight` contract, and the cabin consuming it.
+
+The cabin shipped lit by a fixed lamp, which looks wrong the moment the road
+outside turns orange — and the art target is precisely a car interior lit by a
+sunset. `world/gen/daylight.ts` has computed the sun's colour, the ambient fill
+and an `instrumentGlow` value since Phase 3, and `cockpit/` could not see any
+of it, because domains do not import one another.
+
+- **`contracts/daylight.ts`** — phase, sun direction, key and fill colours, how
+  much daylight there is, and how much the instruments ought to be lighting
+  themselves. `world/` provides it; it is the fourth service, and the first new
+  one since Phase 1.
+- **The service is a live view, not a copy.** Getters onto the same palette
+  object the sky is drawn from, so a consumer reading it during `frame()` sees
+  this frame's values and there is nothing to keep in step.
+- **The cabin transforms the sun into its own frame** before lighting itself,
+  so driving into a sunset lights the dash from the front and turning away from
+  it drops the cabin to ambient. The sun is held just above the cabin's
+  horizontal — once it sets, an interior should fall to ambient rather than
+  start being lit from under the floorpan, which is the same guard the terrain
+  already uses.
+- **The key fades with the daylight, not with the sun's height**, so the cabin
+  dims through dusk instead of snapping dark the instant the disc drops.
+
+**Learned / noted:**
+
+- **`Rgb` was about to exist twice.** The palette had its own and the contract
+  needed one. `world/gen/daylight.ts` now re-exports the contract's. Two
+  subtly different notions of a colour is exactly the kind of thing that is
+  invisible until a conversion goes missing somewhere.
+- **The cabin's rotation order was wrong and had not shown yet.** `Object3D`
+  defaults to XYZ and the camera uses YXZ. With any roll or pitch those are
+  different rotations, so the cabin would have drifted against the view
+  whenever the body leaned — visible only in motion, which is to say invisible
+  to the screenshot harness. Found by reading the code while wiring the sun
+  transform, not by looking at a picture.
+- **An interior is much darker than a sunlit exterior, and should be.** The
+  cabin came out considerably dimmer once the key was a real colour multiplied
+  by a real strength rather than an implicit white. That is correct, and it
+  silhouettes the wheel rim against the dash properly for the first time.
+
+**Seen:** at golden hour the dash is a deep red-brown and the alloy spokes go
+violet-warm with the sky; at noon the leading edge is bright and the mass falls
+away into shadow beneath it.
+
+**Next:** the dials. `daylight.instrumentGlow` is now reachable and nothing
+reads it, so the cabin goes black at night — which is the one time of day the
+instruments are supposed to be the brightest thing in the car.

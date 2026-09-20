@@ -22,23 +22,40 @@ import * as THREE from 'three';
 import { COCKPIT_LAYER, type ViewState } from '../contracts/view.js';
 import type { GameModule } from '../contracts/module.js';
 import type { CarView } from '../contracts/vehicle.js';
+import type { DaylightView } from '../contracts/daylight.js';
+import { applyCabinLight, setSrgb } from './materials.js';
+import { CABIN_LIGHT } from './tuning.js';
 import { createDash, type Dash } from './dash.js';
 import { createSteeringWheel, type SteeringWheel } from './wheel.js';
 
 export function createCockpitModule(): GameModule {
   let car: CarView | undefined;
+  let daylight: DaylightView | undefined;
   let dash: Dash | undefined;
   let wheel: SteeringWheel | undefined;
   let root: THREE.Object3D | undefined;
+  let materials: readonly THREE.ShaderMaterial[] = [];
+
+  // Scratch, reused every frame — nothing is allocated in here.
+  const sunWorld = new THREE.Vector3();
+  const sunLocal = new THREE.Vector3();
+  const inverse = new THREE.Quaternion();
+  const keyColour = new THREE.Color();
+  const ambientColour = new THREE.Color();
 
   return {
     name: 'cockpit',
 
     init(ctx) {
       root = new THREE.Object3D();
+      // The camera uses YXZ, and the cabin has to be oriented exactly as the
+      // camera is or it drifts against the view the moment the body leans.
+      // Object3D defaults to XYZ, which is not the same rotation.
+      root.rotation.order = 'YXZ';
       dash = createDash();
       wheel = createSteeringWheel();
       root.add(dash.object, wheel.object);
+      materials = [...dash.materials, ...wheel.materials];
       ctx.scene.add(root);
 
       // Everything in here draws in the cockpit pass, never in the
@@ -49,6 +66,7 @@ export function createCockpitModule(): GameModule {
 
     start(ctx) {
       car = ctx.services.require('car');
+      daylight = ctx.services.require('daylight');
     },
 
     frame(_alpha: number, view: Readonly<ViewState>) {
@@ -61,6 +79,28 @@ export function createCockpitModule(): GameModule {
       root.rotation.set(view.pitch, view.heading, -view.roll);
 
       if (car !== undefined) wheel?.setSteer(car.steerAngle);
+
+      if (daylight !== undefined) {
+        // The sun, as seen from the driver's seat. Held above the cabin's own
+        // horizontal: once it has set, an interior should fall to ambient
+        // rather than start being lit from under the floorpan.
+        sunWorld.set(daylight.sunX, Math.max(daylight.sunY, 0.05), daylight.sunZ).normalize();
+        inverse.copy(root.quaternion).invert();
+        sunLocal.copy(sunWorld).applyQuaternion(inverse);
+
+        setSrgb(keyColour, daylight.sunLight);
+        setSrgb(ambientColour, daylight.ambient);
+        // The key fades out with the daylight rather than with the sun's
+        // height, so the cabin goes dim through dusk instead of snapping dark
+        // the instant the disc drops below the horizon.
+        applyCabinLight(
+          materials,
+          sunLocal,
+          keyColour,
+          ambientColour,
+          CABIN_LIGHT.KEY_STRENGTH * daylight.daylight,
+        );
+      }
     },
 
     dispose() {
