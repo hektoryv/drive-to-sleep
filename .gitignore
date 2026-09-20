@@ -3,4 +3,7 @@ dist/
 shots/
 *.local
 .DS_Store
-android/
+# The Android project is committed: the manifest, the theme, the launcher
+# icon and MainActivity are all hand-written. Its own android/.gitignore
+# covers the generated parts (build outputs, the copied web assets).
+android/app/release/

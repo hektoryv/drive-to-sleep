@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The cabin black from src/style.css. Every surface the player can see
+      before the first frame — the splash, the window background, the space
+      behind the GL surface — is this, so that starting the app does not
+      begin with a white flash.
+    -->
+    <color name="cabin">#FF08080A</color>
+</resources>

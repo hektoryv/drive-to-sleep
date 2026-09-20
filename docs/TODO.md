@@ -8,7 +8,12 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 ## Now — blocked on you
 
 Phase 2 is code complete and cannot be signed off from here. Everything below
-needs hands on a real build.
+needs hands on a real build — and as of 2026-09-20 there is one:
+
+> **`github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk`**
+>
+> Rebuilt on every push (ADR-0015). Three fingers on the screen toggles the
+> debug readout; it is off by default in the app.
 
 - [ ] **Drive it.** Does it feel good? Corners you can place the car in, a lean
       you can feel, a throttle you want to hold open.
@@ -40,6 +45,14 @@ would close the gap.
 
 ## Later
 
+- [ ] **Back button.** Currently Capacitor's default: one press exits the app.
+      Wants to be a pause, or at least a confirm — an endless calm game that
+      quits on a stray swipe is an irritating one.
+- [ ] **Legacy launcher icon.** The adaptive icon (API 26+) is ours; the
+      `mipmap-*/ic_launcher.png` fallbacks for API 23–25 are still Capacitor's.
+      Needs rasterising, which needs a tool the container doesn't have.
+- [ ] **Release signing.** The `dev` APK is debug-signed. Phase 6's exit
+      criterion needs a keystore in repository secrets and a release job.
 - [ ] **Terrain / biome palettes.** The terrain is hardcoded olive green and
       clashes with every warm sky. Deferred on the owner's call (2026-09-20):
       colour grading is an end-production job, not something to chase while the

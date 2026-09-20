@@ -12,12 +12,27 @@ No sound.
 **Phase 2 code complete, awaiting a device.** The road generates and the car
 drives it: arcade handling with a grip clamp that produces real understeer,
 three attitude springs that give the body weight, and the one-finger control
-scheme. 168 tests, including 20 km of the real generated road under autopilot
+scheme. 187 tests, including 20 km of the real generated road under autopilot
 without leaving the tarmac.
 
 What's missing is the only thing that matters: **whether it feels good.** That
 needs hands on a real build, and it's the phase's actual exit criterion.
 See [docs/TODO.md](docs/TODO.md) for the five constants to try first.
+
+## Getting it on a phone
+
+Every push builds a debug APK and attaches it to a rolling `dev` prerelease, so
+the link never changes ([ADR-0015](docs/decisions/ADR-0015-ci-android-builds.md)):
+
+**[releases/download/dev/drive-to-sleep-dev.apk](https://github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk)**
+
+Open it on the phone, tap it, allow installs from your browser when asked. It
+asks for no permissions, because it has none. Three fingers anywhere on the
+screen toggles the debug readout.
+
+The same push publishes the web build to GitHub Pages, which is the faster loop
+for judging handling — a URL is a second, an APK install is a minute. What it
+can't tell you is WebView touch latency, which is Phase 6's known risk.
 
 The codebase is split into sealed domains so it can be worked on from several
 directions at once — see [docs/06-modules.md](docs/06-modules.md).
@@ -25,7 +40,7 @@ directions at once — see [docs/06-modules.md](docs/06-modules.md).
 ```
 npm install
 npm run dev                                   # play it in a browser
-npm test                                      # 49 tests
+npm test                                      # 187 tests
 npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
 npm run shoot -- --sheet                      # contact sheet
 npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner
@@ -34,6 +49,7 @@ npm run shoot -- --handling                   # the car caught mid-corner
 npm run telemetry                             # drive, and print what it did
 npm run shoot -- --sheet                      # the whole day, one sheet
 npm run shoot -- --at 200 --time golden       # the art target's moment
+npm run android                               # build + copy into android/
 ```
 
 ## Where things are

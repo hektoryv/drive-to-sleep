@@ -161,14 +161,20 @@ drive, see the summary, reopen and resume where you left off.
 
 **Goal:** it's on your phone as a real app.
 
-- [ ] Capacitor project, portrait lock, fullscreen/immersive, no status bar
-- [ ] Back-button handling, lifecycle (pause on background, resume correctly)
-- [ ] Keep-awake while driving
-- [ ] App icon and splash
+*Opened early, out of order, because Phase 2's exit criterion needs a device
+and nothing else can supply one. The performance, latency and thermal work
+stays here; only the wrapper was pulled forward.*
+
+- [x] Capacitor project, portrait lock, fullscreen/immersive, no status bar
+- [x] Lifecycle — the loop stops while backgrounded and resumes cleanly
+- [x] Keep-awake while driving
+- [x] App icon (adaptive) and a splash that is just the cabin black
+- [x] Built in CI, published as an installable APK (ADR-0015)
+- [ ] Back-button handling — currently Capacitor's default, which exits
 - [ ] Device performance pass: profile, then cut whatever's costing most
 - [ ] Touch latency check — WebView input lag is the known risk here
 - [ ] Battery/thermal check over a 20-minute drive
-- [ ] Signed release APK, offline verified, no permissions requested
+- [ ] Signed release APK, offline verified (no permissions are requested already)
 
 **Exit:** a signed APK you can install and drive for twenty minutes without the
 phone getting hot or the frame rate sagging.

@@ -599,3 +599,70 @@ every decision made so far.
 **Next:** Phase 0 implementation — Vite/TS/lint/test scaffold, fixed-step loop,
 seeded noise, debug overlay, and the screenshot harness. Exit when
 `npm run shoot` produces a PNG and the overlay shows a stable 60 fps.
+
+---
+
+## 2026-09-20 — Phase 6 pulled forward: it's an app
+
+**Built:** the Android wrapper, and a way to get it onto a phone.
+
+Phase 2 has been code complete and unsignable-off for two days: its exit
+criterion is that the car feels good, and no screenshot can answer that
+(ADR-0008). So Phase 6's wrapper was pulled forward out of order. Only the
+wrapper — the performance, latency and thermal work stays in Phase 6 where it
+belongs.
+
+- **Capacitor project** (`capacitor.config.ts`, `android/`). App id
+  `com.hektoryv.drivetosleep`, web assets from `dist/`, cabin black behind
+  everything so the launch is not a white flash.
+- **Portrait-locked, immersive, awake.** `MainActivity` adds
+  `FLAG_KEEP_SCREEN_ON` — a player holding one finger still for minutes looks
+  exactly like a player who has left — hides the system bars with
+  `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`, and re-hides them whenever focus
+  comes back. The manifest locks the activity to portrait, which ADR-0006
+  assumed and nothing had yet enforced.
+- **No permissions at all**, `INTERNET` included. The Capacitor template ships
+  it; nothing here opens a socket, because the WebView loads `https://localhost`
+  through Capacitor's local asset loader and the request never reaches the
+  network stack. Non-negotiable 8 is now true of the installed app and not just
+  of the source.
+- **Adaptive launcher icon**, two vector drawables: the art target's sky as the
+  background, a ridge line and a road as the foreground. No Capacitor logo on
+  the home screen.
+- **CI builds the APK** (`.github/workflows/android.yml`) and attaches it to a
+  rolling `dev` prerelease, so there is one stable URL a phone can install
+  from. `.github/workflows/pages.yml` also publishes the web build, because
+  iterating on feel through a URL is a second and iterating through an APK
+  install is a minute.
+- **Three-finger tap toggles the debug panel**, and the panel now defaults to
+  *off* inside the app. In a browser it stays on: every screenshot wants it,
+  and there is a URL to switch it off with. In the app there is no URL, and it
+  sits on top of the sky. Driving takes exactly one finger, so a third pointer
+  is never an accident.
+
+**Decided:** ADR-0015 — the APK is built in CI and the native project is
+committed.
+
+**Learned / noted:**
+
+- The container cannot build an APK and never will: `dl.google.com` is refused
+  by the egress policy with a 403, which takes out the SDK *and* Google's Maven
+  repository, so neither the Android Gradle Plugin nor any AndroidX artifact
+  can be resolved. Phase 0 recorded "no Android SDK"; the sharper version is
+  that there is no route to one. This is the second time that constraint has
+  decided something structural — it picked the stack, and now it has picked
+  where the app is compiled.
+- The generated Capacitor project would not have compiled as shipped. Its
+  `styles.xml` references `@color/colorPrimary`, `colorPrimaryDark` and
+  `colorAccent`, and the template ships no `colors.xml` defining them. Moot
+  here, because the theme was rewritten anyway, but worth knowing before
+  anyone blames their own first build.
+- The template's instrumented test asserts the package name is
+  `com.getcapacitor.app`. Both example tests were deleted rather than fixed —
+  the project's tests live in `tests/` and run under vitest.
+- Committing `android/` means `npx cap add android` must never be run again;
+  `npx cap sync android` (via `npm run android`) is the routine one. Written
+  into ADR-0015 because it is exactly the command someone will reach for.
+
+**Next:** drive it. Phase 2's five constants are at the top of TODO.md, and
+every one of them is a question a still image cannot answer.

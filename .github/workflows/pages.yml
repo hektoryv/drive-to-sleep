@@ -1,0 +1,57 @@
+# Publishes the web build to GitHub Pages.
+#
+# Not the shipping target — the game ships as an APK (ADR-0001) — but the
+# fastest way to get a build onto a phone for a feel pass. Installing an APK
+# is a minute; opening a URL is a second, and Phase 2 is tuned by repetition.
+#
+# Chrome on Android is the same Blink the WebView runs, so what it cannot tell
+# you is precisely what Phase 6 is watching for: WebView-specific touch
+# latency. Judge feel here, confirm it in the app.
+#
+# Needs Settings -> Pages -> Source: GitHub Actions, once.
+
+name: Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - claude/android-driving-game-plan-pw5z30
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deploy
+        uses: actions/deploy-pages@v4
