@@ -27,19 +27,24 @@ import { applyCabinLight, setSrgb } from './materials.js';
 import { CABIN_LIGHT } from './tuning.js';
 import { createDash, type Dash } from './dash.js';
 import { createSteeringWheel, type SteeringWheel } from './wheel.js';
+import { createGauges, type Gauges } from './gauges.js';
+import { createCabinTrim, type CabinTrim } from './trim.js';
+import { lerp } from '../core/math.js';
 
 export function createCockpitModule(): GameModule {
   let car: CarView | undefined;
   let daylight: DaylightView | undefined;
   let dash: Dash | undefined;
   let wheel: SteeringWheel | undefined;
+  let gauges: Gauges | undefined;
+  let trim: CabinTrim | undefined;
   let root: THREE.Object3D | undefined;
   let materials: readonly THREE.ShaderMaterial[] = [];
+  let previousSteer = 0;
+  let currentSteer = 0;
 
   // Scratch, reused every frame — nothing is allocated in here.
   const sunWorld = new THREE.Vector3();
-  const sunLocal = new THREE.Vector3();
-  const inverse = new THREE.Quaternion();
   const keyColour = new THREE.Color();
   const ambientColour = new THREE.Color();
 
@@ -54,8 +59,10 @@ export function createCockpitModule(): GameModule {
       root.rotation.order = 'YXZ';
       dash = createDash();
       wheel = createSteeringWheel();
-      root.add(dash.object, wheel.object);
-      materials = [...dash.materials, ...wheel.materials];
+      gauges = createGauges();
+      trim = createCabinTrim();
+      root.add(dash.object, gauges.object, trim.object, wheel.object);
+      materials = [...dash.materials, ...gauges.materials, ...trim.materials, ...wheel.materials];
       ctx.scene.add(root);
 
       // Everything in here draws in the cockpit pass, never in the
@@ -67,9 +74,17 @@ export function createCockpitModule(): GameModule {
     start(ctx) {
       car = ctx.services.require('car');
       daylight = ctx.services.require('daylight');
+      previousSteer = car.steerAngle;
+      currentSteer = car.steerAngle;
     },
 
-    frame(_alpha: number, view: Readonly<ViewState>) {
+    step() {
+      if (car === undefined) return;
+      previousSteer = currentSteer;
+      currentSteer = car.steerAngle;
+    },
+
+    frame(alpha: number, view: Readonly<ViewState>) {
       if (root === undefined) return;
 
       // The eye, from the contract. render/ resolves it once, so the cabin and
@@ -78,16 +93,16 @@ export function createCockpitModule(): GameModule {
       // No lookYaw. See the note at the top of this file.
       root.rotation.set(view.pitch, view.heading, -view.roll);
 
-      if (car !== undefined) wheel?.setSteer(car.steerAngle);
+      if (car !== undefined) {
+        wheel?.setSteer(lerp(previousSteer, currentSteer, alpha));
+        gauges?.update(car, daylight?.instrumentGlow ?? 0);
+      }
 
       if (daylight !== undefined) {
         // The sun, as seen from the driver's seat. Held above the cabin's own
         // horizontal: once it has set, an interior should fall to ambient
         // rather than start being lit from under the floorpan.
         sunWorld.set(daylight.sunX, Math.max(daylight.sunY, 0.05), daylight.sunZ).normalize();
-        inverse.copy(root.quaternion).invert();
-        sunLocal.copy(sunWorld).applyQuaternion(inverse);
-
         setSrgb(keyColour, daylight.sunLight);
         setSrgb(ambientColour, daylight.ambient);
         // The key fades out with the daylight rather than with the sun's
@@ -95,7 +110,7 @@ export function createCockpitModule(): GameModule {
         // the instant the disc drops below the horizon.
         applyCabinLight(
           materials,
-          sunLocal,
+          sunWorld,
           keyColour,
           ambientColour,
           CABIN_LIGHT.KEY_STRENGTH * daylight.daylight,
@@ -105,6 +120,8 @@ export function createCockpitModule(): GameModule {
 
     dispose() {
       dash?.dispose();
+      gauges?.dispose();
+      trim?.dispose();
       wheel?.dispose();
       root?.removeFromParent();
     },

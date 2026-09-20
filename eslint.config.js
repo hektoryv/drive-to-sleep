@@ -93,7 +93,19 @@ export default tseslint.config(
         {
           patterns: [
             { group: THREE_PATTERNS, message: PURITY_HINT },
-            { group: ['**/render/**', '**/cockpit/**', '**/ui/**', '**/fx/**'], message: PURITY_HINT },
+            {
+              group: [
+                '**/sim/**',
+                '**/view/**',
+                '**/render/**',
+                '**/cockpit/**',
+                '**/ui/**',
+                '**/input/**',
+                '**/fx/**',
+                '**/audio/**',
+              ],
+              message: CONTRACT_HINT,
+            },
             { group: ['**/app/**'], message: 'Only app/ wires modules together; nothing imports it.' },
           ],
         },

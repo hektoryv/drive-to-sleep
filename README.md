@@ -10,15 +10,14 @@ there is no music and no interface sound.
 
 ## Status
 
-**Phase 2 code complete, awaiting a device.** The road generates and the car
-drives it: arcade handling with a grip clamp that produces real understeer,
-three attitude springs that give the body weight, and the one-finger control
-scheme. 187 tests, including 20 km of the real generated road under autopilot
-without leaving the tarmac.
+**Phase 4 is in progress.** The road and driving model are device-approved;
+the current build adds the reference-led red-and-black cabin, five live dials,
+sunset lighting, and synthesised engine/wind/tyre sound. 212 tests include a
+20 km drive over the real generated road without leaving the tarmac.
 
-What's missing is the only thing that matters: **whether it feels good.** That
-needs hands on a real build, and it's the phase's actual exit criterion.
-See [docs/TODO.md](docs/TODO.md) for the five constants to try first.
+Sound still needs its first listen on a real device, and the cockpit still
+needs its mirror and final material/detail pass. See
+[docs/TODO.md](docs/TODO.md) for the live state rather than the phase history.
 
 ## Getting it on a phone
 
@@ -44,7 +43,7 @@ directions at once — see [docs/06-modules.md](docs/06-modules.md).
 ```
 npm install
 npm run dev                                   # play it in a browser
-npm test                                      # 187 tests
+npm test                                      # 212 tests
 npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
 npm run shoot -- --sheet                      # contact sheet
 npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner

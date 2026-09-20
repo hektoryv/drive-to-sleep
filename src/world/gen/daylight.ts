@@ -277,6 +277,7 @@ export function sunDirectionAt(phase: number, out: SunDirection): SunDirection {
  * while after the sun has stopped.
  */
 export function daylightAt(phase: number): number {
-  const sun = sunDirectionAt(phase, makeSunDirection());
-  return clamp((sun.elevation + 0.12) / 0.45, 0, 1);
+  const p = ((phase % 1) + 1) % 1;
+  const elevationAngle = DAY.MAX_SUN_ELEVATION * Math.sin((p - 0.25) * Math.PI * 2);
+  return clamp((Math.sin(elevationAngle) + 0.12) / 0.45, 0, 1);
 }

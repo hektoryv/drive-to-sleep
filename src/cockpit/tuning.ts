@@ -32,13 +32,13 @@ export const DASH = {
    * to stay in front of the rim, or the mass swallows the wheel — which is
    * exactly what happened the first time it was made deeper.
    */
-  DEPTH_M: 0.34,
+  DEPTH_M: 0.3,
   /** Height of the top surface below the eye. Higher = more enclosed. */
-  DROP_M: 0.5,
+  DROP_M: 0.48,
   /** How far forward the front edge is, metres. */
   FRONT_Z: -1.0,
   /** How far the mass drops below its top edge. Deep enough to leave frame. */
-  FACE_M: 2.0,
+  FACE_M: 1.35,
   /** Rake of the top surface — the far edge sits lower, as a real dash does. */
   RAKE: 7 * DEG,
 } as const;
@@ -50,12 +50,12 @@ export const DASH = {
  * own.
  */
 export const BINNACLE = {
-  WIDTH_M: 0.62,
-  HEIGHT_M: 0.2,
-  DEPTH_M: 0.2,
+  WIDTH_M: 0.57,
+  HEIGHT_M: 0.18,
+  DEPTH_M: 0.15,
   /** Centre height below the eye. */
-  DROP_M: 0.46,
-  Z: -0.72,
+  DROP_M: 0.48,
+  Z: -0.7,
   /** How far the hood overhangs the dials. Higher = deeper shadow, more 911. */
   HOOD_M: 0.07,
 } as const;
@@ -65,17 +65,17 @@ export const BINNACLE = {
  * the whole point (the opening brief, and ADR-0004).
  */
 export const WHEEL = {
-  RIM_RADIUS_M: 0.165,
-  RIM_THICKNESS_M: 0.0135,
+  RIM_RADIUS_M: 0.145,
+  RIM_THICKNESS_M: 0.0115,
   /** Centre position relative to the eye. */
-  DROP_M: 0.52,
-  Z: -0.46,
+  DROP_M: 0.5,
+  Z: -0.5,
   /** Rake of the column. A 70s car's wheel is close to vertical. */
   RAKE: 22 * DEG,
   SPOKES: 3,
-  SPOKE_WIDTH_M: 0.019,
-  SPOKE_THICKNESS_M: 0.007,
-  HUB_RADIUS_M: 0.038,
+  SPOKE_WIDTH_M: 0.03,
+  SPOKE_THICKNESS_M: 0.008,
+  HUB_RADIUS_M: 0.04,
   HUB_DEPTH_M: 0.022,
   /**
    * How far the wheel turns for full lock, as a multiple of the road wheel
@@ -85,27 +85,61 @@ export const WHEEL = {
   TURNS_PER_STEER: 5.2,
 } as const;
 
+/** Five overlapping instruments, centred on the driver rather than the car. */
+export const GAUGES = {
+  Y: -0.405,
+  Z: -0.59,
+  X: [-0.165, -0.085, 0, 0.09, 0.17] as const,
+  RADIUS: [0.05, 0.061, 0.072, 0.061, 0.05] as const,
+  TICKS: [9, 11, 13, 11, 9] as const,
+  START_ANGLE: -2.25,
+  SWEEP: 4.5,
+  MAX_SPEED_MS: 61.1,
+} as const;
+
+/** Broad stage-set pieces that make the phone edges read as a cabin. */
+export const TRIM = {
+  PILLAR_X: [-0.35, 0.86] as const,
+  PILLAR_Y: -0.15,
+  PILLAR_Z: -0.58,
+  PILLAR_WIDTH_M: 0.045,
+  PILLAR_HEIGHT_M: 0.68,
+  PILLAR_ANGLE: 19 * DEG,
+  SCUTTLE_Y: -0.455,
+  SCUTTLE_Z: -0.62,
+  SCUTTLE_WIDTH_M: 1.45,
+  SCUTTLE_HEIGHT_M: 0.065,
+  DOOR_X: [-0.57, 0.93] as const,
+  DOOR_Y: -0.72,
+  DOOR_Z: -0.42,
+} as const;
+
 /**
  * Colour. Red interior per ADR-0014 — the art target's car is red inside, and
  * a black cabin would make the bottom half of a portrait screen a dead zone.
  */
 export const CABIN_COLOURS = {
   /** The main upholstered surfaces. */
-  LEATHER: 0x7d1f22,
+  LEATHER: 0xa52b30,
   /** Shadowed sides and the underside of the hood. */
   LEATHER_DARK: 0x3d0f12,
   /** Crackle-black instrument surround and the binnacle face. */
   INSTRUMENT: 0x17151a,
+  /** Lower dash and door-card vinyl. */
+  PANEL: 0x17171d,
   /** The wheel rim — a darker leather than the dash. */
   RIM: 0x2a1416,
   /** Spokes and hub: brushed alloy, the one cool tone in the cabin. */
   ALLOY: 0x8c8a90,
+  DIAL: 0x0c0c11,
+  MARKING: 0xc6b8bb,
+  NEEDLE: 0xe23a2f,
 } as const;
 
 /**
- * Cabin lighting. Fixed, not driven by the sky — yet. The day cycle reaching
- * in here needs a contract that does not exist, and inventing one before the
- * cabin is drawn would be designing the seam before knowing its shape.
+ * Cabin lighting. The direction and colours are replaced from DaylightView
+ * every frame; these values are the safe startup state before that service is
+ * available.
  */
 export const CABIN_LIGHT = {
   /** Key direction in the eye frame: from the windscreen, slightly above. */

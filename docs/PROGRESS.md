@@ -7,6 +7,41 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-20 — Reference-led cockpit pass and inherited-code audit
+
+The placeholder cabin is gone. The composition now follows
+`docs/reference/art-target.png`: sky reaches the top of the portrait frame, a
+61% windscreen gives the road room, warm earth and violet ranges sit behind a
+solid double-yellow road, and the red-and-black cabin has an angled A-pillar,
+door-card silhouettes, a layered dash, five overlapping instruments, live
+needles, passenger vents and a smaller three-spoke wheel. Instrument markings
+rise with `daylight.instrumentGlow`; the cabin shaders take the same sun and
+ambient colours as the world.
+
+The review also found four code defects that a still would not expose:
+
+- `view-module.ts` accepted fixed-step interpolation alpha and then discarded
+  it. It now presents the previous/current car poses along the short heading
+  arc, and the wheel interpolates its steering angle too.
+- Cabin normals were lit in each mesh's object space even when the mesh was
+  raked or rotated. Normals and the world-space sun are now compared in view
+  space.
+- Audio pause claimed to suspend after fading but never called `suspend()`.
+  It now fades, suspends after `MASTER.FADE_S`, and cancels stale resume work
+  when paused or disposed.
+- The pure `world/gen/` lint block omitted several sibling-domain paths, so
+  imports across them passed despite ADR-0011. The boundary and a lint-backed
+  regression test now cover sibling domains and `world/view/`.
+
+`daylightAt()` also stopped allocating a temporary sun object from a live
+getter. The suite is 212 tests; lint and the production build pass. Golden-hour
+portrait renders were reviewed at the harness's phone size. Sound remains
+unheard on real hardware, and the no-`INTERNET` Android manifest assumption is
+still unverified; neither is claimed fixed by this pass.
+
+Next for Phase 4: the mirror, dial glass/material finish, and the night-frame
+exit shot. Handling constants remain intentionally untouched.
+
 ## 2026-09-20 — Phase 3 begins: the sky, and a target to aim at
 
 An art target arrived: `docs/reference/art-target.png`, "basically what I want

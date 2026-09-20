@@ -75,9 +75,23 @@ export function createSteeringWheel(): SteeringWheel {
   hub.rotation.x = Math.PI / 2;
   spinner.add(hub);
 
+  // A dark horn button breaks up the alloy centre and keeps it generic: no
+  // badge or marque, just the period construction.
+  const buttonMaterial = createCabinMaterial(CABIN_COLOURS.RIM);
+  const buttonGeometry = new THREE.CylinderGeometry(
+    WHEEL.HUB_RADIUS_M * 0.63,
+    WHEEL.HUB_RADIUS_M * 0.63,
+    WHEEL.HUB_DEPTH_M * 1.15,
+    18,
+  );
+  const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+  button.rotation.x = Math.PI / 2;
+  button.position.z = 0.008;
+  spinner.add(button);
+
   return {
     object: mount,
-    materials: [rimMaterial, alloyMaterial],
+    materials: [rimMaterial, alloyMaterial, buttonMaterial],
 
     setSteer(steerAngle: number) {
       // Negated: turning the road wheels right is a clockwise turn of the rim,
@@ -89,8 +103,10 @@ export function createSteeringWheel(): SteeringWheel {
       rimGeometry.dispose();
       spokeGeometry.dispose();
       hubGeometry.dispose();
+      buttonGeometry.dispose();
       rimMaterial.dispose();
       alloyMaterial.dispose();
+      buttonMaterial.dispose();
     },
   };
 }

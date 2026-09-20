@@ -12,6 +12,7 @@
  */
 
 import * as THREE from 'three';
+import { ROAD } from '../tuning.js';
 
 /**
  * Writes an authored palette colour into a THREE.Color.
@@ -98,9 +99,11 @@ const ROAD_FRAG = /* glsl */ `
   uniform vec3 uTarmac;
   uniform vec3 uShoulder;
   uniform vec3 uVerge;
-  uniform vec3 uLine;
+  uniform vec3 uCentreLineColour;
+  uniform vec3 uEdgeLineColour;
   uniform float uShoulderWidth;
   uniform float uCentreLine;
+  uniform float uCentreGap;
   uniform float uEdgeLine;
   varying float vLateral;
   varying float vHalfWidth;
@@ -123,9 +126,14 @@ const ROAD_FRAG = /* glsl */ `
 
     // Markings. The edge lines sit just inside the tarmac, as they do on a
     // real road — painted on the surface, not at the boundary.
-    float centre = band(lat, 0.0, uCentreLine);
+    float centreOffset = uCentreGap + uCentreLine;
+    float centre = max(
+      band(lat, -centreOffset, uCentreLine),
+      band(lat, centreOffset, uCentreLine)
+    );
     float edge = band(dist, vHalfWidth - uEdgeLine * 3.0, uEdgeLine);
-    albedo = mix(albedo, uLine, max(centre, edge) * 0.85);
+    albedo = mix(albedo, uCentreLineColour, centre * 0.92);
+    albedo = mix(albedo, uEdgeLineColour, edge * 0.85);
 
     gl_FragColor = vec4(applyFog(lightSurface(albedo, vNormal)), 1.0);
     #include <tonemapping_fragment>
@@ -171,13 +179,15 @@ export function createRoadMaterial(shared: WorldUniforms): THREE.ShaderMaterial 
     fragmentShader: ROAD_FRAG,
     uniforms: {
       ...shared,
-      uTarmac: { value: new THREE.Color(0x3a3b3f) },
-      uShoulder: { value: new THREE.Color(0x5b5651) },
-      uVerge: { value: new THREE.Color(0x6a7358) },
-      uLine: { value: new THREE.Color(0xd8d2c0) },
+      uTarmac: { value: new THREE.Color(0x45404a) },
+      uShoulder: { value: new THREE.Color(0x795448) },
+      uVerge: { value: new THREE.Color(0x8a6143) },
+      uCentreLineColour: { value: new THREE.Color(0xe9a11b) },
+      uEdgeLineColour: { value: new THREE.Color(0xd8d2c0) },
       uShoulderWidth: { value: 0.8 },
-      uCentreLine: { value: 0.08 },
-      uEdgeLine: { value: 0.06 },
+      uCentreLine: { value: ROAD.CENTRE_LINE_M },
+      uCentreGap: { value: ROAD.CENTRE_LINE_GAP_M },
+      uEdgeLine: { value: ROAD.EDGE_LINE_M },
     },
   });
 }
@@ -188,9 +198,9 @@ export function createTerrainMaterial(shared: WorldUniforms): THREE.ShaderMateri
     fragmentShader: TERRAIN_FRAG,
     uniforms: {
       ...shared,
-      uLow: { value: new THREE.Color(0x66714f) },
-      uHigh: { value: new THREE.Color(0x8a8f6a) },
-      uRock: { value: new THREE.Color(0x6d6a63) },
+      uLow: { value: new THREE.Color(0x8a5b3c) },
+      uHigh: { value: new THREE.Color(0xa86943) },
+      uRock: { value: new THREE.Color(0x754657) },
     },
   });
 }

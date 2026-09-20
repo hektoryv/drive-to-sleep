@@ -21,16 +21,27 @@
 import type { GameModule } from '../contracts/module.js';
 import type { CarView, ControlState } from '../contracts/vehicle.js';
 import { createAudioGraph, type AudioGraph, type SoundState } from './graph.js';
+import { MASTER } from './tuning.js';
 
 /** Seconds between attempts to start a context the browser is still refusing. */
 const RESUME_RETRY_S = 0.5;
 
-export function createAudioModule(): GameModule {
+export function createAudioModule(
+  createGraph: () => AudioGraph | undefined = createAudioGraph,
+): GameModule {
   let car: CarView | undefined;
   let controls: ControlState | undefined;
   let graph: AudioGraph | undefined;
   let running = false;
   let sinceAttempt = RESUME_RETRY_S;
+  let suspendTimer: ReturnType<typeof setTimeout> | undefined;
+  let resumeGeneration = 0;
+
+  function cancelSuspend(): void {
+    if (suspendTimer === undefined) return;
+    clearTimeout(suspendTimer);
+    suspendTimer = undefined;
+  }
 
   // Written in place every frame rather than rebuilt, like every other piece
   // of per-frame state in this codebase.
@@ -48,7 +59,7 @@ export function createAudioModule(): GameModule {
     init() {
       // Undefined where there is no Web Audio — the tests and the screenshot
       // harness both run somewhere that has none, and neither should care.
-      graph = createAudioGraph();
+      graph = createGraph();
     },
 
     start(ctx) {
@@ -60,6 +71,8 @@ export function createAudioModule(): GameModule {
       if (graph === undefined || controls === undefined) return;
       if (running || !controls.active) return;
 
+      cancelSuspend();
+
       sinceAttempt += dt;
       if (sinceAttempt < RESUME_RETRY_S) return;
       sinceAttempt = 0;
@@ -69,11 +82,18 @@ export function createAudioModule(): GameModule {
         graph.setRunning(true);
         return;
       }
-      void graph.context.resume().then(() => {
-        if (graph === undefined) return;
-        running = true;
-        graph.setRunning(true);
-      });
+      const attempt = resumeGeneration;
+      void graph.context
+        .resume()
+        .then(() => {
+          if (graph === undefined || attempt !== resumeGeneration) return;
+          running = true;
+          graph.setRunning(true);
+        })
+        .catch(() => {
+          // Autoplay policy can refuse an attempt even after a touch. The
+          // fixed-step retry path will try again after RESUME_RETRY_S.
+        });
     },
 
     frame() {
@@ -92,7 +112,18 @@ export function createAudioModule(): GameModule {
       // is audible as a click exactly when the player is leaving the app.
       graph?.setRunning(false);
       running = false;
+      resumeGeneration++;
       sinceAttempt = RESUME_RETRY_S;
+      cancelSuspend();
+      const pausedGraph = graph;
+      if (pausedGraph !== undefined) {
+        suspendTimer = setTimeout(() => {
+          suspendTimer = undefined;
+          if (graph === pausedGraph && !running && pausedGraph.context.state === 'running') {
+            void pausedGraph.context.suspend();
+          }
+        }, MASTER.FADE_S * 1000);
+      }
     },
 
     resume() {
@@ -103,6 +134,8 @@ export function createAudioModule(): GameModule {
     },
 
     dispose() {
+      cancelSuspend();
+      resumeGeneration++;
       graph?.dispose();
       graph = undefined;
     },

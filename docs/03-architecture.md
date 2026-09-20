@@ -1,6 +1,6 @@
 # 03 — Architecture
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
 ## The two rules
 
@@ -51,7 +51,7 @@ what it owns, not by whether it happens to be visible.
 ## Coordinate systems
 
 Three of them. Confusing them is the most likely source of bugs, so they are
-named explicitly and conversions live in exactly one place (`world/stations.ts`).
+named explicitly and conversions live in exactly one place (`world/gen/stations.ts`).
 
 | Space | Symbol | Meaning |
 |---|---|---|

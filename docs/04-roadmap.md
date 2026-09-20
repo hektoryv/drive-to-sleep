@@ -139,16 +139,13 @@ popping.
 
 - [x] The second render pass the cabin needs to exist at all (ADR-0017)
 - [x] Steering wheel: rim, three spokes, hub — rotating with the finger
-- [x] Dash mass, blocked in
-- [ ] Interior geometry proper: cowl, A-pillars, door cards, console
-- [ ] Five-dial binnacle with correct overlapping layout. Built and removed in
-      the first pass: a hood with nothing under it reads as a table, and the
-      dimensions were about twice what they should be
-- [ ] Live needles: tach and speedo driven by the sim
-- [ ] Dial backlighting rising with falling ambient light
+- [x] Layered dash, cowl, A-pillar, door-card and vent silhouettes
+- [x] Five-dial binnacle with the overlapping layout from the reference
+- [x] Live needles: tach and speedo driven by the sim
+- [x] Dial backlighting rising with falling ambient light
 - [ ] Glass specular streak across the dial covers
 - [ ] Rear-view mirror
-- [ ] Final portrait framing: aperture proportions, FOV, horizon placement
+- [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon
 - [ ] Material finishes: matte vinyl / semi-gloss leather / brushed aluminium
 
 **Exit:** a night screenshot where the dials are the only light source and the

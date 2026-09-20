@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import { CABIN, CABIN_COLOURS, DASH } from './tuning.js';
+import { BINNACLE, CABIN, CABIN_COLOURS, DASH } from './tuning.js';
 import { createCabinMaterial } from './materials.js';
 
 export interface Dash {
@@ -29,6 +29,7 @@ export function createDash(): Dash {
 
   const leather = createCabinMaterial(CABIN_COLOURS.LEATHER);
   const leatherDark = createCabinMaterial(CABIN_COLOURS.LEATHER_DARK);
+  const panel = createCabinMaterial(CABIN_COLOURS.PANEL);
   const geometries: THREE.BufferGeometry[] = [];
 
   function box(
@@ -62,12 +63,25 @@ export function createDash(): Dash {
     DASH.WIDTH_M,
     DASH.FACE_M,
     DASH.DEPTH_M,
-    leather,
+    panel,
     0,
     -DASH.DROP_M - DASH.FACE_M / 2,
     DASH.FRONT_Z + DASH.DEPTH_M / 2,
   );
   body.rotation.x = -DASH.RAKE;
+
+  // The red top catches the sunset; the dark vertical face keeps the lower
+  // half of the screen from becoming one uninterrupted red slab.
+  const shelf = box(
+    DASH.WIDTH_M,
+    0.09,
+    DASH.DEPTH_M,
+    leather,
+    0,
+    -DASH.DROP_M + 0.02,
+    DASH.FRONT_Z + DASH.DEPTH_M / 2,
+  );
+  shelf.rotation.x = -DASH.RAKE;
 
   // A darker band along the leading edge, where the top surface turns down
   // toward the windscreen. Two tones is all it takes to stop a single box
@@ -82,26 +96,27 @@ export function createDash(): Dash {
     DASH.FRONT_Z + 0.01,
   );
 
-  // The binnacle is deliberately not here yet.
-  //
-  // It was built in this pass and taken out again. A hooded pod is a thin
-  // plate with two cheeks, and with nothing inside it, seen from the driver's
-  // seat at this field of view, it read as a table with one visible leg rather
-  // than as an instrument tunnel. The hood only makes sense once there are
-  // dials under it to be hooded — so it comes back with them, in one piece,
-  // rather than sitting here looking like furniture.
-  //
-  // Its dimensions are still in `tuning.ts`, and are the thing to distrust
-  // when it returns: 0.62 m across at 0.6 m from the eye subtends nearly
-  // three-quarters of the screen, which is roughly twice what it should be.
+  // A low hood across the dial cluster. Its face stays open; gauges.ts owns
+  // the instruments themselves and can be removed without changing the dash.
+  const hood = box(
+    BINNACLE.WIDTH_M,
+    0.045,
+    BINNACLE.DEPTH_M,
+    leatherDark,
+    -CABIN.CENTRE_X,
+    -BINNACLE.DROP_M + BINNACLE.HEIGHT_M / 2,
+    BINNACLE.Z,
+  );
+  hood.rotation.x = -0.08;
 
   return {
     object: root,
-    materials: [leather, leatherDark],
+    materials: [leather, leatherDark, panel],
     dispose() {
       for (const g of geometries) g.dispose();
       leather.dispose();
       leatherDark.dispose();
+      panel.dispose();
     },
   };
 }

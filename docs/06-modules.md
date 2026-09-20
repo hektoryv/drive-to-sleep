@@ -1,6 +1,6 @@
 # 06 — Modules and domain ownership
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-09-20*
 
 This project is built so that several people — or several agents — can work on
 different parts of it at once without their changes reaching each other. That
@@ -135,7 +135,7 @@ each domain owns its own:
 | `src/cockpit/tuning.ts` | cabin geometry, wheel, colours, cabin light |
 
 The rule from `05-conventions.md` still holds — no feel or look constant is
-written inline in logic — it just has four homes instead of one.
+written inline in logic — it has one home per domain instead of one shared file.
 
 ## Working in parallel
 

@@ -9,11 +9,10 @@
  * supposed to be sealed has no business changing how anything else is lit. The
  * key is a uniform instead, and the cockpit module points it at the sun.
  *
- * The direction is in the **cabin's own frame**, so it is the sun as seen from
- * the driver's seat: drive into a sunset and the dash lights from the front;
- * turn away from it and the cabin falls to ambient. That is the whole reason
- * the `daylight` contract exists — an interior lit by a fixed lamp looks wrong
- * the moment the road outside turns orange.
+ * Both normals and the world-space key are transformed into view space in the
+ * vertex shader. That matters because most cabin pieces are rotated locally:
+ * treating their object-space normals as cabin-space normals lights a raked
+ * dash and an upright dash as if they were the same surface.
  */
 
 import * as THREE from 'three';
@@ -34,39 +33,42 @@ export function setSrgb(target: THREE.Color, c: Rgb): void {
 }
 
 const VERT = /* glsl */ `
-  varying vec3 vNormalLocal;
-  varying vec3 vLocal;
+  uniform vec3 uKeyWorld;
+  varying vec3 vNormalView;
+  varying vec3 vKeyView;
+  varying float vViewY;
 
   void main() {
-    // Local, not world: the cabin is authored in the eye frame and lit in it.
-    vNormalLocal = normalize(normal);
-    vLocal = position;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    vNormalView = normalize(normalMatrix * normal);
+    vKeyView = normalize(mat3(viewMatrix) * uKeyWorld);
+    vViewY = viewPosition.y;
+    gl_Position = projectionMatrix * viewPosition;
   }
 `;
 
 const FRAG = /* glsl */ `
   uniform vec3 uAlbedo;
-  uniform vec3 uKey;
   uniform vec3 uKeyColour;
   uniform float uKeyStrength;
   uniform vec3 uAmbientColour;
   uniform float uAmbient;
-  varying vec3 vNormalLocal;
-  varying vec3 vLocal;
+  varying vec3 vNormalView;
+  varying vec3 vKeyView;
+  varying float vViewY;
 
   void main() {
-    vec3 n = normalize(vNormalLocal);
+    vec3 n = normalize(vNormalView);
 
     // Half-lambert, as everywhere else in this game (ADR-0007): the unlit side
     // lifts toward ambient rather than going black.
-    float ndl = dot(n, normalize(uKey)) * 0.5 + 0.5;
+    float ndl = dot(n, normalize(vKeyView)) * 0.5 + 0.5;
     vec3 lit = uAmbientColour * uAmbient + uKeyColour * (uKeyStrength * ndl * ndl);
 
     // Everything in the cabin gets darker toward the bottom of the frame,
     // which is the one cue that the light is coming from the windscreen. It
     // does most of the work of making a handful of boxes read as an interior.
-    float depth = smoothstep(-0.75, 0.05, vLocal.y);
+    float depth = smoothstep(-0.75, 0.05, vViewY);
     lit *= 0.45 + 0.55 * depth;
 
     gl_FragColor = vec4(uAlbedo * lit, 1.0);
@@ -81,7 +83,7 @@ export function createCabinMaterial(colour: number): THREE.ShaderMaterial {
     fragmentShader: FRAG,
     uniforms: {
       uAlbedo: { value: new THREE.Color(colour) },
-      uKey: {
+      uKeyWorld: {
         value: new THREE.Vector3(CABIN_LIGHT.KEY[0], CABIN_LIGHT.KEY[1], CABIN_LIGHT.KEY[2]),
       },
       uKeyColour: { value: new THREE.Color(0xfff0dc) },
@@ -93,7 +95,7 @@ export function createCabinMaterial(colour: number): THREE.ShaderMaterial {
 }
 
 /**
- * Points every cabin material at the sun at once.
+ * Points every cabin material at the world-space sun at once.
  *
  * The sun is held above the cabin's horizontal however low it really is: once
  * it sets, an interior should fall to ambient rather than start being lit from
@@ -107,7 +109,7 @@ export function applyCabinLight(
   strength: number,
 ): void {
   for (const m of materials) {
-    const dir = m.uniforms.uKey?.value as THREE.Vector3 | undefined;
+    const dir = m.uniforms.uKeyWorld?.value as THREE.Vector3 | undefined;
     if (dir !== undefined) dir.copy(sun);
     (m.uniforms.uKeyColour?.value as THREE.Color | undefined)?.copy(key);
     (m.uniforms.uAmbientColour?.value as THREE.Color | undefined)?.copy(ambient);

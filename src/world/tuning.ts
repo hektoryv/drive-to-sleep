@@ -62,8 +62,9 @@ export const ROAD = {
   SHOULDER_M: 0.8,
   VERGE_M: 6.0,
 
-  /** Painted line half-widths, metres. */
-  CENTRE_LINE_M: 0.08,
+  /** Painted line half-widths, metres. Centre is a solid double yellow. */
+  CENTRE_LINE_M: 0.055,
+  CENTRE_LINE_GAP_M: 0.055,
   EDGE_LINE_M: 0.06,
 } as const;
 

@@ -1,6 +1,6 @@
 # 02 — Art Direction
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
 ## The look in one line
 
@@ -32,22 +32,20 @@ horizon, so the framing is designed rather than inherited:
 
 ```
 ┌─────────────────┐  ← 9:19.5 portrait (412×915 CSS px shown)
-│ ░ mirror  dist ░│   5%   header strip: rear-view mirror, distance readout
-├─────────────────┤
 │                 │
 │                 │
-│    the world    │  46%   THE WINDSCREEN — the only band the 3D world is
-│   ╲         ╱   │        drawn into. Roughly square on a typical phone.
+│    the world    │  61%   THE WINDSCREEN — the only band the 3D world is
+│   ╲         ╱   │        drawn into. Sky reaches the top edge.
 │    ╲_______╱    │        A-pillars cut the top corners.
 ├─────────────────┤
-│  ○   ◉   ○      │  15%   dash top + five-dial binnacle, big tach centre
+│  ○   ◉   ○      │  11%   dash top + five-dial binnacle, big tach centre
 ├─────────────────┤
-│    ╭───────╮    │  34%   the wheel — rim crosses the lower screen, hub and
+│    ╭───────╮    │  28%   the wheel — rim crosses the lower screen, hub and
 │    │   ╳   │    │        spokes visible, bottom of the rim off-screen
 └────┴───────┴────┘
 ```
 
-Live values are in `VIEW` in `src/sim/tuning.ts`. Phase 4 finalises them
+Live values are in `VIEW` in `src/render/tuning.ts`. Phase 4 finalises them
 against the real cockpit geometry.
 
 Key decisions that make this work:
@@ -55,7 +53,7 @@ Key decisions that make this work:
 - **The windscreen gets the space; the dash gives it up.** The binnacle sits
   *behind* the wheel in the real car, so the dials can overlap the top of the
   wheel band rather than needing a tall strip of their own. That frees the
-  dash band down to 15% and hands the difference to the view, which is
+  dash band down to 11% and hands the difference to the view, which is
   pillar #2.
 - **Field of view is specified horizontally (72°), not vertically.** See
   ADR-0009 for why horizontally. The value is deliberately exaggerated: a
@@ -69,7 +67,7 @@ Key decisions that make this work:
   it. Partway only — a view fully aligned with the road ahead would pin the
   road to the centre of the frame and the corner would stop reading as a
   corner.
-- **Horizon sits at 62% of the aperture height.** More sky than road. Sky is
+- **Horizon sits at 68% of the aperture height.** More sky than road. Sky is
   where the mood is. Implemented as a camera pitch offset, so it is free.
 - **The wheel's bottom is off-screen.** We see the top of the rim and the
   spokes. Showing the whole wheel would waste a third of the display on the
@@ -87,18 +85,19 @@ A recognisable early-1970s air-cooled sports car cabin. Shape and layout only
 
 | Element | Treatment |
 |---|---|
-| **Dash** | Flat, horizontal, black textured vinyl. Almost no curvature — this is the period tell. A shallow cowl hoods the dials. |
+| **Dash** | Red upholstered top over a dark instrument face. Almost no curvature — this is the period tell. A shallow cowl hoods the dials. |
 | **Instruments** | **Five overlapping round dials**, tach dead centre and largest, speedo to its right, oil/fuel/clock to the sides. Black faces, white numerals, thin white needles with orange tips. This layout *is* the car. |
 | **Steering wheel** | Thin-rimmed, ~380 mm, three flat spokes meeting a small centre hub, slightly dished toward the driver. Black leather rim with visible stitching along the inner edge. Riveted spokes. |
 | **Column & stalks** | Black column shroud, two thin chrome-tipped stalks. |
 | **Centre console** | Minimal. Three vertical toggle/slider heater levers, a gear lever with a black ball knob and a thin chrome shaft. |
-| **Doors / A-pillars** | Black vinyl pillars, thin. Visible door card edge and window rubber at the frame edges. |
+| **Doors / A-pillars** | Dark vinyl pillars against red door cards. Visible window rubber at the frame edges. |
 | **Mirror** | Small rectangular rear-view on a short stalk, top centre. Shows a simple receding-road reflection (cheap render-to-texture or a faked gradient + moving road lines — decide in Phase 4). |
-| **Materials** | Everything is black. Differentiation comes entirely from *finish*: matte vinyl dash, semi-gloss leather rim, brushed aluminium spokes, glass dial covers with a moving specular streak. |
+| **Materials** | Red upholstery frames a dark instrument panel. Differentiation also comes from *finish*: matte vinyl dash, semi-gloss leather rim, brushed aluminium spokes, glass dial covers with a moving specular streak. |
 
-### Why "everything is black" is an asset, not a problem
+### Why the dark instrument panel is an asset
 
-A black interior means the cabin is almost a silhouette, which:
+The dark centre means the working part of the cabin is almost a silhouette,
+while the red perimeter catches the sunset (ADR-0014). This:
 
 - costs nearly nothing to render,
 - never fights the landscape for attention,
@@ -108,7 +107,7 @@ A black interior means the cabin is almost a silhouette, which:
 
 ### Dial illumination
 
-Gauges are backlit with a warm amber-green glow that comes up as the ambient
+Gauges are backlit with a restrained warm red/amber glow that comes up as the ambient
 light falls. At night this is the only interior light source and it should
 spill faintly onto the wheel rim and the driver's side of the dash. This is
 the single most evocative detail in the whole game and is worth real effort in

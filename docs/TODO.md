@@ -23,19 +23,15 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
 ## Next — Phase 4: The cockpit *(in progress)*
 
-The render architecture is in (ADR-0017) and the cabin is **blocked in, not
-designed**: a red mass and a wheel that turns with your thumb. It reads as
-sitting in a car, which is all it is meant to do yet.
+The render architecture is in (ADR-0017), and the first reference-led cabin
+pass now reads as the same red-and-black 1970s interior as the target.
 
-- [ ] **The shapes.** Flat red boxes. This is the piece that wants your eye
-      more than mine — the art target shows the cabin, and every number is in
-      `cockpit/tuning.ts`.
-- [ ] Five-dial binnacle and live needles. `CarView` already carries `rpm`,
+- [x] Layered dash, binnacle, scuttle, A-pillar and door-card silhouettes
+- [x] Five-dial binnacle and live needles. `CarView` carries `rpm`,
       `maxRpm` and `speedMs`, so the data side is done.
 - [x] The `daylight` contract — the cabin is lit by the same sun as the road
-- [ ] Dial backlighting, reading `daylight.instrumentGlow`. The contract now
-      carries it; nothing consumes it, so the cabin goes black at night.
-- [ ] A-pillars, door card, mirror.
+- [x] Dial backlighting, reading `daylight.instrumentGlow`
+- [ ] Rear-view mirror and final material/detail pass
 
 ## Later — Phase 3: The view *(paused)*
 
@@ -51,7 +47,7 @@ would close the gap.
       as scenery rather than as interface
 - [ ] Guardrail where the ground falls away
 - [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
-- [ ] Double yellow centre lines rather than a single white one
+- [x] Solid double-yellow centre lines with white edge markings
 - [ ] Biome parameter sets and distance-driven blending
 - [ ] Height fog on top of the distance fog
 - [ ] Colour grading, bloom, vignette, animated dither grain
@@ -80,11 +76,10 @@ would close the gap.
       Needs rasterising, which needs a tool the container doesn't have.
 - [ ] **Release signing.** The `dev` APK is debug-signed. Phase 6's exit
       criterion needs a keystore in repository secrets and a release job.
-- [ ] **Terrain / biome palettes.** The terrain is hardcoded olive green and
-      clashes with every warm sky. Deferred on the owner's call (2026-09-20):
-      colour grading is an end-production job, not something to chase while the
-      structure is still being built. Everything it needs already exists — it
-      reads `world/gen/daylight.ts` like the sky and ridges do.
+- [ ] **Terrain / biome palettes.** The olive placeholder is now warm earth,
+      matching the reference at golden hour, but it is still one static
+      palette. Per-time and per-biome terrain colour remains an end-production
+      grading job driven from `world/gen/daylight.ts`.
 
 
 Phases 2–7, listed in the [roadmap](04-roadmap.md). Pulled into **Next** as
@@ -108,10 +103,9 @@ Things to resolve before the phase that needs them:
 - **Resume-point semantics** (Phase 5): resume at the exact distance, or at the
   start of the current biome? Exact is more continuous; biome-start avoids
   dropping you mid-hairpin on a cold open.
-- **Aperture height and FOV** (Phase 4 / Phase 2): now 46% and 72°. Both were
-  chosen from stills against a placeholder. Re-judge the aperture once there is
-  real dash and wheel geometry to fill the cabin, and the FOV on a real device
-  at speed — neither is a thing a screenshot can settle.
+- **Aperture height and FOV** (Phase 4 / Phase 2): now 61% and 72°. The
+  aperture was re-framed against the real cabin and target; judge the FOV on a
+  real device at speed, because a screenshot cannot settle it.
 - **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
   sequence of stills through one corner, which shows where the view ends up but
   not how it gets there. Needs hands on a device.
@@ -134,14 +128,10 @@ Things to resolve before the phase that needs them:
   chunk boundary, about every 17 seconds. Invisible under software
   rasterisation; confirm it is invisible on a device too, and split into
   per-chunk meshes only if it is not.
-- **Velocity-aligned camera term** (Phase 2): once the car can slide, consider
-  adding a small term that follows the velocity vector as well as the road
-  ahead. Rejected for now as not solving the anticipation problem (ADR-0010),
-  but it is the right fix for how a slide reads.
 - **Near-road dominance** (Phase 4): at 72° with the taller aperture, the road
   immediately in front fills the bottom of the windscreen. In a real 911 you
-  would be looking at the bonnet there. Expected to resolve itself when the
-  bonnet and scuttle exist — do not "fix" it by narrowing the FOV first.
+  would be looking at the bonnet there. The scuttle now hides the pass seam;
+  judge the remaining dominance at speed before narrowing the FOV.
 - **Distant road aliasing** (Phase 1): the placeholder road band speckles at
   the vanishing point where it is thinner than a pixel. Real swept geometry
   with proper mip-mapping should handle it; worth confirming it does.
