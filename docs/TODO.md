@@ -5,25 +5,21 @@ Phase definitions and exit criteria live in [04-roadmap.md](04-roadmap.md).
 
 ---
 
-## Now — blocked on you
+## Now
 
-Phase 2 is code complete and cannot be signed off from here. Everything below
-needs hands on a real build — and as of 2026-09-20 there is one:
+Phase 2 is signed off — driven on a device 2026-09-20, and it feels good. What
+is left of it is **calibration**, deferred by the owner and parked below.
 
-> **`github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk`**
->
-> Rebuilt on every push (ADR-0015). Three fingers on the screen toggles the
-> debug readout; it is off by default in the app.
+The build: **`github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk`**,
+rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
-- [ ] **Drive it.** Does it feel good? Corners you can place the car in, a lean
-      you can feel, a throttle you want to hold open.
-- [ ] Turn-in weight — `CAR.YAW_RESPONSE`, currently 7.5. Lower is more
-      languid; too low and it steers from the back seat.
-- [ ] Steering at speed — `CAR.STEER_FALLOFF_MIN`, currently 0.2. Higher is
-      more alive and twitchier.
-- [ ] Lean — `ATTITUDE.ROLL_MAX` (4.5°) and `ROLL_ZETA` (0.7). The question is
-      whether it reads as weight or as seasickness *in motion*.
-- [ ] Control radii — `input/tuning.ts`. Do they suit your thumb?
+- [ ] **Listen to it.** The engine note has never been heard by anybody. It is
+      the one thing in the sound that is likely to be wrong, and the fix is
+      `audio/tuning.ts` — most probably `ENGINE.CUTOFF_MAX_HZ` (brightness) and
+      `ENGINE.LOAD_WEIGHT` (how much the level follows the throttle rather than
+      the revs).
+- [ ] Mix balance — `MASTER.GAIN`, then the three `GAIN_MAX`/`GAIN_LOAD`
+      values against each other. Phone speaker first, then headphones.
 
 ## Next — Phase 3: The view *(in progress)*
 
@@ -45,6 +41,18 @@ would close the gap.
 
 ## Later
 
+- [ ] **Calibrate the car.** Acceleration, top speed, cornering g and braking
+      are placeholder numbers that have never been measured against anything.
+      Deferred on the owner's call (2026-09-20): *"as long as you keep stuff
+      properly modular, we can just fix that later."* All of it lives in
+      `sim/tuning.ts` — `PEAK_ACCEL`, `TOP_SPEED_MS`, `DRAG`, `THRUST_FALLOFF`,
+      `LATERAL_GRIP_SCALE`, `BRAKE_G` — and `npm run telemetry` prints what the
+      car actually does, so this is a measure-then-set job rather than a search.
+      Worth doing against real figures for the car being evoked: ~5.5 s to
+      100 km/h, ~245 km/h, ~0.85 g.
+- [ ] **Sound: the rest of Phase 8.** Surface transitions as moments rather
+      than crossfades, rumble strips and impacts from the events `sim/` already
+      emits, and a mute control once there is a HUD to put it in.
 - [ ] **Back button.** Currently Capacitor's default: one press exits the app.
       Wants to be a pause, or at least a confirm — an endless calm game that
       quits on a stray swipe is an irritating one.

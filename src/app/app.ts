@@ -175,8 +175,18 @@ export function createApp(options: AppOptions): App {
       host.resize(renderer.framing);
     },
 
-    start: () => loop.start(),
-    stop: () => loop.stop(),
+    start() {
+      // The modules are told as well as the loop. A module that owns something
+      // with its own clock — the AudioContext — would otherwise keep going
+      // while the game is backgrounded and nothing is stepping it.
+      host.resume();
+      loop.start();
+    },
+
+    stop() {
+      loop.stop();
+      host.pause();
+    },
 
     dispose() {
       loop.stop();

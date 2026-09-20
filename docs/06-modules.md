@@ -20,6 +20,7 @@ its shaders and its tuning constants.
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
 | **cockpit** | The 911 interior. Dash, wheel, gauges, mirror. | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
+| **audio** | The engine note, wind and tyres. Synthesised — no samples, no music. | `src/audio/` |
 | **fx** | Particles, camera shake. | `src/fx/` |
 
 And three shared things that are nobody's domain:
@@ -124,6 +125,7 @@ each domain owns its own:
 | `src/world/tuning.ts` | road, events, terrain, time of day |
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
+| `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
 
 The rule from `05-conventions.md` still holds — no feel or look constant is
 written inline in logic — it just has four homes instead of one.
@@ -144,6 +146,26 @@ If you are picking up one domain:
 
 The debug overlay shows per-module step cost, so "which domain got slower" is
 answerable without profiling.
+
+## A worked example: adding the audio domain
+
+Sound was ruled out at the start of the project and ruled back in on
+2026-09-20 (ADR-0016) — the least planned-for change this codebase has had, and
+therefore the only honest test of the claim this document makes.
+
+What it cost outside `src/audio/`:
+
+- **one line** in `src/app/modules.ts`, the manifest;
+- **one word** in `eslint.config.js`, adding `audio` to the domain list so the
+  boundary is enforced for it too;
+- **two additive contract fields** — `CarView.maxRpm`, and `pause`/`resume` on
+  `GameModule` — each of which was independently justified: the tachometer
+  needs the redline, and an AudioContext keeps playing while backgrounded.
+
+No domain changed. `sim/` does not know the car can be heard, and `world/` does
+not know the tyres make a different noise on its gravel. If a future domain
+costs more than this, something has gone wrong with the seams rather than with
+the domain.
 
 ## The one sanctioned exception
 

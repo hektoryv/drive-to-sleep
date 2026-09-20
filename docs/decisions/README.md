@@ -21,3 +21,4 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0013](ADR-0013-origin-drag.md) | The touch origin is dragged, never drifted | Accepted |
 | [0014](ADR-0014-red-interior.md) | The car is red, not black | Accepted |
 | [0015](ADR-0015-ci-android-builds.md) | The APK is built in CI; the native project is committed | Accepted |
+| [0016](ADR-0016-sound-after-all.md) | There is sound after all — synthesised, no music, no samples | Accepted |

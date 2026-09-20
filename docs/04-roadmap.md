@@ -1,8 +1,8 @@
 # 04 — Roadmap
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-09-20*
 
-Eight phases. Each has a **goal**, a **task list**, and an **exit criterion**
+Nine phases. Each has a **goal**, a **task list**, and an **exit criterion**
 that must be demonstrable before the next phase starts. Progress is logged in
 [PROGRESS.md](PROGRESS.md); the live task list is [TODO.md](TODO.md).
 
@@ -61,7 +61,7 @@ noise rather than more events. See PROGRESS.md.
 
 ---
 
-## Phase 2 — The drive ⏸ *code complete 2026-09-18, awaiting device sign-off*
+## Phase 2 — The drive ✅ *signed off 2026-09-20, calibration deferred*
 
 **Goal:** the car feels good. This is the most important phase in the project.
 
@@ -74,17 +74,24 @@ noise rather than more events. See PROGRESS.md.
 - [x] Handling regression tests — 80 of them, driving the real generated road
 - [x] An autopilot, so the harness can drive rather than teleport
 - [x] A chase camera and `npm run telemetry`
-- [ ] **Tuning pass on a real device.** Not done. Cannot be done from here.
+- [x] **Driven on a real device.** 2026-09-20, on the first APK.
+- [ ] **Calibration pass** — acceleration, top speed, cornering g. Deferred
+      by the owner: *"as long as you keep stuff properly modular, we can just
+      fix that later."* Every one of these numbers is in `sim/tuning.ts`.
 
-**Exit: not met, and not meetable from this side.** The code is complete and
-the numbers are where they should be — 0.85 g at the tyre ceiling, 4.5° of
-roll, 20 km under autopilot without leaving the tarmac, 5.8 s to 100 km/h — and
-stills now show the body where the physics actually put it. None of that is the
-criterion. The criterion is that you drive it and it feels good.
+**Exit: met.** The criterion was that you drive it and it feels good. Driven,
+on the first Android build, 2026-09-20: *"got it running, really good!"*
 
-Five constants are the likely first stops: `YAW_RESPONSE` (turn-in weight),
-`STEER_FALLOFF_MIN`, `ROLL_MAX`, `ROLL_ZETA`, and the control radii in
-`input/tuning.ts`. PROGRESS.md lists what is specifically unjudged.
+With one explicit carve-out, made by the owner in the same breath: **nothing is
+calibrated.** Acceleration, top speed and cornering g are placeholder numbers
+that have never been measured against anything. That is deferred rather than
+failed — the phase was about whether the *model* produces a car you can place
+and lean on, and it does. What the numbers should be is a separate question,
+answerable at any point, because every one of them is a named constant in
+`sim/tuning.ts` and none of them is inlined anywhere.
+
+This is the payoff for non-negotiable 5, and it is worth saying out loud: a
+handling pass can be a pull request that touches one file.
 
 **The warning held**, with one qualification. Screenshots still cannot judge
 this phase. But what they *could* do turned out to be more than expected once
@@ -154,6 +161,44 @@ cabin is unmistakably a 70s sports car. That single image is the test.
 
 **Exit:** a complete session — open, drive, overtake several cars, end the
 drive, see the summary, reopen and resume where you left off.
+
+---
+
+## Phase 8 — Sound *(first slice landed 2026-09-20)*
+
+*Numbered 8 because it was defined last and the numbers are identities —
+PROGRESS.md and the ADRs refer to phases by number, so renumbering would
+silently rewrite history. It runs here, between 5 and 6.*
+
+**Goal:** the car sounds like it is being driven.
+
+Sound was a non-goal until the owner drove the first build and reversed it
+(ADR-0016). A first slice is in, on the same terms as Phase 6's wrapper: the
+domain exists and makes the right noise, and the rest is a phase.
+
+- [x] `audio/` as a sealed domain — synthesised, no samples, no music
+- [x] Engine: sub, body and harmonic voices, lowpass opening with load
+- [x] Wind: filtered noise, square law in speed
+- [x] Tyres: filtered noise, colour by surface, level by lateral load
+- [x] Starts on the first touch; fades out when backgrounded
+- [ ] **Mix pass on a device.** Phone speakers, then headphones. The engine is
+      the one that will be wrong — it has never been heard.
+- [ ] A mute control. Lands with the Phase 5 HUD; until then the volume keys
+      are the interface.
+- [ ] Surface transitions — a wheel dropping onto gravel should be a moment,
+      and right now it is a crossfade
+- [ ] Rumble strips and impacts, driven by the events `sim/` already emits
+- [ ] Wind through the quarter-light: a cue for speed that is not just level
+- [ ] Decide, as its own ADR, whether a music bed is allowed after all. The
+      answer today is no.
+
+**Exit:** twenty minutes with headphones on without wanting to turn it off,
+and the same twenty minutes muted without missing it.
+
+**Watch out for:** a synthesised engine turning into a dentist's drill. The
+guard is that level must come mostly from *load*, not revs — an engine coasting
+at 6000 rpm is much quieter than one pulling at 3000, and the test suite
+asserts it.
 
 ---
 

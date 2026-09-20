@@ -18,6 +18,7 @@ import type { GameEventMap } from '../contracts/events.js';
 import { createAutopilot, type Autopilot } from './autopilot.js';
 import { createDriveState, placeOnRoad, stepDrive, type DriveState } from './drive.js';
 import { slipAngle, type VehicleInput } from './vehicle.js';
+import { CAR } from './tuning.js';
 import { GRAVITY } from './tuning.js';
 
 export interface VehicleModule extends GameModule {
@@ -58,6 +59,9 @@ export function createVehicleModule(): VehicleModule {
     },
     get rpm() {
       return vehicle.rpm;
+    },
+    get maxRpm() {
+      return CAR.MAX_RPM;
     },
     get x() {
       return vehicle.x;

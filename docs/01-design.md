@@ -224,8 +224,28 @@ bottom. The HUD is therefore almost nothing:
 - **Flow** — a thin arc around the edge of one dial. No numbers.
 - **Overtakes** — a tally that appears for 2 s when it increments, then fades.
 
-With no audio, the dash gauges are also the feedback channel: the needle
-sweep *is* the engine note.
+The dash gauges are a feedback channel in their own right: the needle sweep
+says what the engine note says, and it has to keep saying it, because the game
+must work with the phone muted (ADR-0016). Sound doubles this channel; it
+never replaces it.
+
+## 6b. Sound
+
+Three voices, all synthesised from the car's own state, all continuous — there
+is nothing in the mix that starts, stops or repeats.
+
+| Voice | Driven by | What it is for |
+|---|---|---|
+| **Engine** | rpm and throttle | The only thing that tells you the car is working rather than coasting. Quiet on a closed throttle however high the revs. |
+| **Wind** | speed, squared | Speed, felt rather than read. It is the voice that makes 140 feel different from 90 when the road ahead looks the same. |
+| **Tyres** | speed, surface, lateral g | What you are driving *on*, and how close to the limit. Gravel is loud and bright; it is how you know a wheel is off before you can see it. |
+
+Tyre scrub rising with lateral load is the only warning the game gives that
+the car is near the edge, since there is no fail state to find the edge with
+(ADR-0005). That is deliberate: it is a warning you can ignore.
+
+No music. The drive has no tempo, and anything with one would impose a rhythm
+on a world whose whole idea is that nothing happens on a schedule.
 
 ## 7. Session shape
 

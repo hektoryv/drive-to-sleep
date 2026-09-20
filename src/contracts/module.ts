@@ -72,5 +72,19 @@ export interface GameModule {
 
   resize?(framing: Framing): void;
 
+  /**
+   * The game has stopped running — backgrounded, or the tab hidden. Nothing
+   * will call `step` or `frame` until `resume`.
+   *
+   * Most modules do not need this: they simply stop being asked to do
+   * anything. It exists for state that keeps going on its own when nobody is
+   * driving it, which in practice means anything owning a resource with its
+   * own clock — an AudioContext keeps playing the last thing it was told.
+   */
+  pause?(): void;
+
+  /** Running again. Symmetric with `pause`, and may be called without one. */
+  resume?(): void;
+
   dispose?(): void;
 }

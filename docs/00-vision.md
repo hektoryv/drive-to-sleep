@@ -41,9 +41,14 @@ These break ties. When a decision is unclear, the earlier pillar wins.
 
 Written down so we can point at them later instead of re-arguing:
 
-- **No sound.** Confirmed by the brief. No engine note, no music, no UI
-  clicks. The game must be fully legible silently — which means the HUD and
-  the visual feedback carry all the information that audio usually would.
+- **No music, no interface sound.** Sound itself was a non-goal until
+  2026-09-20, when the owner drove the first build and reversed it
+  (ADR-0016). What survives of the original instinct is the part that was
+  right: nothing on a timeline, nothing with a key, no clicks or
+  confirmations. Only the engine, the air and the tyres.
+- **No sound the game depends on.** It must stay fully legible silently —
+  somebody will play this muted on a bus — so the HUD and the gauges still
+  carry everything audio carries. Sound is an addition, never a substitute.
 - **No fail state.** No crash screen, no game over, no respawn, no restart.
 - **No oncoming traffic.** Same-direction only. See ADR-0005.
 - **No multiplayer, no accounts, no network.** The game runs entirely offline.

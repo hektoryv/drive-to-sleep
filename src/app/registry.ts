@@ -37,6 +37,9 @@ export interface ModuleHost {
   step(dt: number): void;
   frame(alpha: number): void;
   resize(framing: Framing): void;
+  /** Backgrounded: modules owning something with its own clock should quieten. */
+  pause(): void;
+  resume(): void;
   dispose(): void;
 }
 
@@ -103,6 +106,12 @@ export function createModuleHost(modules: readonly GameModule[], options: Regist
     resize(next: Framing) {
       framing = next;
       for (const m of modules) m.resize?.(next);
+    },
+    pause() {
+      for (const m of modules) m.pause?.();
+    },
+    resume() {
+      for (const m of modules) m.resume?.();
     },
     dispose() {
       // Reverse order, so a module that consumed another's service tears down

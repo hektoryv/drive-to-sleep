@@ -29,6 +29,12 @@ export interface CarView {
   readonly speedMs: number;
   /** Engine speed, rev/min — the tachometer needle reads this. */
   readonly rpm: number;
+  /**
+   * Where the needle runs out, rev/min. Exposed because `rpm` means nothing
+   * without it: the dial needs it to know its own sweep, and the engine note
+   * needs it to know what "working hard" is.
+   */
+  readonly maxRpm: number;
   /** World position and heading. `y` is the road surface under the car. */
   readonly x: number;
   readonly y: number;

@@ -21,7 +21,7 @@ import tseslint from 'typescript-eslint';
  */
 
 /** Every domain directory. Used to forbid all the ones you don't belong to. */
-const DOMAINS = ['sim', 'world', 'render', 'cockpit', 'ui', 'input', 'fx'];
+const DOMAINS = ['sim', 'world', 'render', 'cockpit', 'ui', 'input', 'fx', 'audio'];
 
 const THREE_PATTERNS = ['three', 'three/*'];
 
@@ -128,7 +128,7 @@ export default tseslint.config(
 
   // The view-owning domains. Each may use three.js and its own internals, and
   // nothing else's.
-  ...['world', 'render', 'cockpit', 'ui', 'input', 'fx'].map((domain) => ({
+  ...['world', 'render', 'cockpit', 'ui', 'input', 'fx', 'audio'].map((domain) => ({
     files: [`src/${domain}/**/*.ts`],
     ignores: domain === 'world' ? ['src/world/gen/**/*.ts'] : [],
     rules: {

@@ -17,6 +17,7 @@ import { createWorldModule } from '../world/world-module.js';
 import { createInputModule } from '../input/input-module.js';
 import { createVehicleModule } from '../sim/vehicle-module.js';
 import { createViewModule } from '../render/view-module.js';
+import { createAudioModule } from '../audio/audio-module.js';
 
 export interface ModuleSetOptions {
   view: ViewState;
@@ -33,5 +34,9 @@ export function createModules(options: ModuleSetOptions): GameModule[] {
     createVehicleModule(),
     // Last, so the camera sees this tick's car rather than the previous one's.
     createViewModule({ view: options.view }),
+    // After the camera because it reads the car rather than the view, so its
+    // position in this list is free. Kept at the end because a domain that
+    // provides nothing is the easiest one to reason about last.
+    createAudioModule(),
   ];
 }

@@ -666,3 +666,99 @@ committed.
 
 **Next:** drive it. Phase 2's five constants are at the top of TODO.md, and
 every one of them is a question a still image cannot answer.
+
+---
+
+## 2026-09-20 — Phase 2 signed off, and sound goes back in
+
+**The verdict:** the owner installed the APK and drove it. *"Got it running,
+really good!"* Phase 2's exit criterion is met — the one criterion in the
+project that could never be met from this side of the screen.
+
+Two things came back with it, and they pull in opposite directions.
+
+### 1. Nothing is calibrated, and that is fine
+
+*"Gameplay wise, it's quite obvious that nothing is calibrated, i.e.
+acceleration, top speed, turning g's all of that stuff. But as long as you keep
+stuff properly modular, we can just fix that later."*
+
+Recorded rather than acted on, deliberately. Phase 2 was about whether the
+*model* produces a car you can place and lean on; it does. What the numbers
+should be is a different question, and it is now the first item under "Later"
+with the specific constants named and real-world figures to aim at
+(~5.5 s to 100 km/h, ~245 km/h, ~0.85 g).
+
+It is worth noting what made "we can just fix that later" true rather than
+hopeful. Every one of those values is a named constant in `sim/tuning.ts` with
+a comment saying which direction makes it more of something, because
+non-negotiable 5 says so. A calibration pass is a diff to one file, and
+`npm run telemetry` already prints what the car actually does, so it is a
+measure-then-set job rather than a search.
+
+### 2. Sound is back
+
+*"I take back that it doesn't need sound, it definitely does."*
+
+"No sound" was in the opening brief, was written into the vision doc as an
+explicit non-goal, and was non-negotiable 6. It shaped real design work — the
+HUD was specified to carry everything audio usually would. It was also a guess
+made before anyone had driven the game, and it has now been tested. ADR-0016
+reverses it and keeps the part of the instinct that was right: no music, no
+interface sound, no samples, and the game must stay completely legible muted.
+
+**Built:** a new sealed `audio/` domain. Three voices, all synthesised from the
+car's own state, all continuous — nothing in the mix starts, stops or repeats.
+
+- **Engine** — a triangle sub at half order, a detuned sawtooth at the firing
+  frequency (rpm/60 × 1.5, a flat six), and a second sawtooth just off the
+  octave, through a lowpass whose cutoff opens exponentially with load. No
+  gearbox, so the note is monotonic in speed and never drops back; that is
+  ADR-0004's "one finger, no thought" showing up in the sound.
+- **Wind** — filtered noise rising with the *square* of speed, because that is
+  what drag does and the ear knows when it doesn't.
+- **Tyres** — filtered noise, colour by surface and level by speed and lateral
+  g. Gravel is loud and bright, grass is loud and dull.
+
+**Decided:** ADR-0016 — there is sound after all.
+
+**Learned / noted:**
+
+- **The architecture paid for itself.** Sound is the least planned-for change
+  this codebase has had — it was explicitly ruled out — and outside
+  `src/audio/` it cost one line in the manifest, one word in the lint config,
+  and two additive contract fields. No domain changed. `sim/` does not know the
+  car can be heard; `world/` does not know its gravel sounds different. ADR-0011
+  claimed this would be true and had never been tested by anything nobody
+  planned for. It is now, and it is written up as a worked example in
+  `06-modules.md` so the next person can check the claim rather than trust it.
+- **The lint config caught the one shortcut I took.** The first version of
+  `audio-module.ts` imported `CAR.MAX_RPM` from `sim/tuning.ts`, which is
+  exactly the cross-domain import the rules forbid. The fix was better than the
+  shortcut: `maxRpm` became a field on `CarView`, where the Phase 4 tachometer
+  needs it anyway — `rpm` is meaningless without knowing where the needle runs
+  out. The architecture is the lint config, and the lint config improved the
+  contract.
+- **`GameModule` gained `pause`/`resume`.** Most modules do not need them —
+  they simply stop being asked to do anything. Audio does: an AudioContext
+  keeps playing whatever it was last told while the game is backgrounded and
+  nothing is stepping it. It fades rather than cutting, because suspending an
+  audible graph leaves half a cycle hanging and that click lands exactly as the
+  player is leaving the app.
+- **Sound cannot start before the first touch.** Browsers refuse it, the
+  Android WebView included. The context starts suspended and resumes the first
+  time `controls.active` goes true, which in a one-finger game is the same
+  moment the drive starts — so the audio domain needs no window listener of its
+  own and there is exactly one place where sound can begin.
+- **Nothing here has been heard.** This container has no audio device, the
+  tests run in Node and the screenshot harness runs headless. What is tested is
+  the mapping from car state to sound parameters, which is where the
+  interesting mistakes live: the suite asserts that the engine is quieter
+  coasting at 6000 rpm than pulling at 3000 (the difference between an engine
+  being driven and a dentist's drill), that wind is super-linear in speed, that
+  tyre scrub is symmetric in corner direction, and that the three voices
+  summed at their worst case still come in under unity so the mix cannot clip.
+  201 tests.
+
+**Next:** Phase 3 — vegetation and roadside furniture, the two biggest
+remaining gaps to the art target. And a listen, which only the owner can do.

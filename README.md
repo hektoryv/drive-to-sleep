@@ -5,7 +5,8 @@ An endless, calm driving game for Android. You sit in the driver's seat of a
 mountain, desert, country — as the sun goes down and comes back up.
 
 One finger does everything. Left/right steers. Up/down is gas and brake.
-No sound.
+The engine, the wind and the tyres are synthesised from the car's own state;
+there is no music and no interface sound.
 
 ## Status
 
