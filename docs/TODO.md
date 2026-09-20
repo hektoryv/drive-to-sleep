@@ -23,15 +23,20 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
 ## Next — Phase 4: The cockpit *(in progress)*
 
-The render architecture is in (ADR-0017), and the first reference-led cabin
-pass now reads as the same red-and-black 1970s interior as the target.
+The render architecture is in (ADR-0017). A metrically normalised, licensed
+noncommercial 930 model now replaces the procedural mock-up while the final
+car asset is found or commissioned.
 
-- [x] Layered dash, binnacle, scuttle, A-pillar and door-card silhouettes
-- [x] Five-dial binnacle and live needles. `CarView` carries `rpm`,
-      `maxRpm` and `speedMs`, so the data side is done.
+- [x] Imported cabin and body, uniformly normalised to the real 4.291 m length
+- [x] Source steering-wheel mesh separated, re-pivoted and driven by steering
+- [x] Textured five-dial cluster. The source needles are baked/static;
+      `CarView` still carries `rpm`, `maxRpm` and `speedMs` for the future
+      authored or overlaid live needles.
 - [x] The `daylight` contract — the cabin is lit by the same sun as the road
-- [x] Dial backlighting, reading `daylight.instrumentGlow`
-- [ ] Rear-view mirror and final material/detail pass
+- [x] Texture-preserving cabin fill, rising modestly with
+      `daylight.instrumentGlow`
+- [ ] Replace or remodel the static gauge needles so tach and speed are live
+- [ ] Reintroduce a correctly placed rear-view mirror and finish materials
 
 ## Later — Phase 3: The view *(paused)*
 
@@ -89,7 +94,9 @@ each phase opens rather than duplicated here.
 
 Things to resolve before the phase that needs them:
 
-- **Rear-view mirror** (Phase 4): true render-to-texture, or a faked gradient
+- **Rear-view mirror** (Phase 4): the imported mirror is hidden because its
+  placement does not survive the portrait cockpit crop. For its replacement,
+  use true render-to-texture or a faked gradient
   with moving road lines? RTT costs a second scene pass; the fake may be
   indistinguishable in a mirror that's ~80 px tall. Decide by trying the fake
   first.

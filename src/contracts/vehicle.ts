@@ -7,6 +7,15 @@
 
 import type { Surface } from './world.js';
 
+/**
+ * Physical bumper-to-bumper length of the placeholder player car, metres.
+ *
+ * This lives in the contract because the cockpit asset and any future body or
+ * collision representation must agree on one real-world size without either
+ * domain importing the other's tuning.
+ */
+export const PLAYER_CAR_LENGTH_M = 4.291;
+
 /** Normalised control input, -1..1 for steer and 0..1 for the pedals. */
 export interface ControlState {
   /** Negative left, positive right. */

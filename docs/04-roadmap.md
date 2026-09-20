@@ -138,11 +138,11 @@ popping.
 **Goal:** you're sitting in the car.
 
 - [x] The second render pass the cabin needs to exist at all (ADR-0017)
-- [x] Steering wheel: rim, three spokes, hub — rotating with the finger
-- [x] Layered dash, cowl, A-pillar, door-card and vent silhouettes
-- [x] Five-dial binnacle with the overlapping layout from the reference
-- [x] Live needles: tach and speedo driven by the sim
-- [x] Dial backlighting rising with falling ambient light
+- [x] Metrically normalised placeholder 930 cabin and body
+- [x] Imported steering wheel re-pivoted and rotating with the finger
+- [x] Textured five-dial binnacle from the source model
+- [ ] Live needles: the imported needles are baked/static; the sim data exists
+- [x] Cabin texture fill rising modestly with falling ambient light
 - [ ] Glass specular streak across the dial covers
 - [ ] Rear-view mirror
 - [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon

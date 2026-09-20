@@ -22,24 +22,19 @@ import * as THREE from 'three';
 import { COCKPIT_LAYER, type ViewState } from '../contracts/view.js';
 import type { GameModule } from '../contracts/module.js';
 import type { CarView } from '../contracts/vehicle.js';
-import type { DaylightView } from '../contracts/daylight.js';
-import { applyCabinLight, setSrgb } from './materials.js';
+import type { DaylightView, Rgb } from '../contracts/daylight.js';
 import { CABIN_LIGHT } from './tuning.js';
-import { createDash, type Dash } from './dash.js';
-import { createSteeringWheel, type SteeringWheel } from './wheel.js';
-import { createGauges, type Gauges } from './gauges.js';
-import { createCabinTrim, type CabinTrim } from './trim.js';
+import { createCockpitModel, type CockpitModel } from './model.js';
 import { lerp } from '../core/math.js';
 
 export function createCockpitModule(): GameModule {
   let car: CarView | undefined;
   let daylight: DaylightView | undefined;
-  let dash: Dash | undefined;
-  let wheel: SteeringWheel | undefined;
-  let gauges: Gauges | undefined;
-  let trim: CabinTrim | undefined;
+  let model: CockpitModel | undefined;
   let root: THREE.Object3D | undefined;
-  let materials: readonly THREE.ShaderMaterial[] = [];
+  let ambient: THREE.AmbientLight | undefined;
+  let key: THREE.DirectionalLight | undefined;
+  let keyTarget: THREE.Object3D | undefined;
   let previousSteer = 0;
   let currentSteer = 0;
 
@@ -57,13 +52,14 @@ export function createCockpitModule(): GameModule {
       // camera is or it drifts against the view the moment the body leans.
       // Object3D defaults to XYZ, which is not the same rotation.
       root.rotation.order = 'YXZ';
-      dash = createDash();
-      wheel = createSteeringWheel();
-      gauges = createGauges();
-      trim = createCabinTrim();
-      root.add(dash.object, gauges.object, trim.object, wheel.object);
-      materials = [...dash.materials, ...gauges.materials, ...trim.materials, ...wheel.materials];
+      model = createCockpitModel();
+      root.add(model.object);
       ctx.scene.add(root);
+
+      ambient = new THREE.AmbientLight(CABIN_LIGHT.START_AMBIENT, CABIN_LIGHT.AMBIENT_INTENSITY);
+      key = new THREE.DirectionalLight(CABIN_LIGHT.START_KEY, CABIN_LIGHT.KEY_INTENSITY);
+      keyTarget = key.target;
+      ctx.scene.add(ambient, key, keyTarget);
 
       // Everything in here draws in the cockpit pass, never in the
       // windscreen pass — which is scissored to the aperture and would cut
@@ -94,9 +90,12 @@ export function createCockpitModule(): GameModule {
       root.rotation.set(view.pitch, view.heading, -view.roll);
 
       if (car !== undefined) {
-        wheel?.setSteer(lerp(previousSteer, currentSteer, alpha));
-        gauges?.update(car, daylight?.instrumentGlow ?? 0);
+        model?.setSteer(lerp(previousSteer, currentSteer, alpha));
       }
+
+      // This derives the road plane from the shared view contract rather than
+      // copying the renderer's eye-height constant into the cockpit domain.
+      model?.setGroundFromEye(view.y + view.heaveY - view.eyeY);
 
       if (daylight !== undefined) {
         // The sun, as seen from the driver's seat. Held above the cabin's own
@@ -108,22 +107,33 @@ export function createCockpitModule(): GameModule {
         // The key fades out with the daylight rather than with the sun's
         // height, so the cabin goes dim through dusk instead of snapping dark
         // the instant the disc drops below the horizon.
-        applyCabinLight(
-          materials,
-          sunWorld,
-          keyColour,
-          ambientColour,
-          CABIN_LIGHT.KEY_STRENGTH * daylight.daylight,
-        );
+        if (ambient !== undefined) {
+          // A closed cabin receives bounced light from every window. A plain
+          // ambient fill also keeps the dark scanned textures readable when
+          // their surface normals point away from the low sun.
+          ambient.color.copy(ambientColour).lerp(keyColour, 0.35);
+          ambient.intensity = CABIN_LIGHT.AMBIENT_INTENSITY + daylight.instrumentGlow * 0.8;
+        }
+        if (key !== undefined && keyTarget !== undefined) {
+          key.color.copy(keyColour);
+          key.intensity = CABIN_LIGHT.KEY_INTENSITY * daylight.daylight;
+          keyTarget.position.copy(root.position);
+          key.position.copy(root.position).addScaledVector(sunWorld, CABIN_LIGHT.KEY_DISTANCE_M);
+        }
       }
     },
 
     dispose() {
-      dash?.dispose();
-      gauges?.dispose();
-      trim?.dispose();
-      wheel?.dispose();
+      model?.dispose();
+      ambient?.removeFromParent();
+      key?.removeFromParent();
+      keyTarget?.removeFromParent();
       root?.removeFromParent();
     },
   };
+}
+
+/** Daylight contract colours are sRGB palette values, not linear triples. */
+function setSrgb(target: THREE.Color, colour: Rgb): void {
+  target.setRGB(colour.r, colour.g, colour.b, THREE.SRGBColorSpace);
 }

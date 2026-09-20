@@ -7,6 +7,38 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-21 — A real-scale 930 replaces the procedural cabin
+
+The hand-built cockpit pass has been removed. In its place is the supplied
+1982 930 GLB: a noncommercial development placeholder whose source, author and
+CC BY-NC-SA 4.0 licence are recorded beside the asset. It must be replaced
+before any commercial release.
+
+The GLB's exported car is only about 0.0432 source units long. That is an
+export-unit oddity, not a reason to resize the game world. The road, camera,
+simulation and telemetry already use SI units, including metres and metres per
+second. The loader therefore measures the untransformed source bounds and
+uniformly normalises the model to the real 930's **4.291 m** bumper-to-bumper
+length. That length now lives in `contracts/vehicle.ts`, where a future body or
+collision representation can share it without crossing domain boundaries.
+
+The model's steering wheel is a distinct mesh despite arriving in one GLB. Its
+exported pivot was at the car origin, so the loader computes the wheel's own
+centre, reparents it under a dedicated pivot and drives that pivot from the
+interpolated steering angle. The full-car roof, headliner, windows and misplaced
+mirror material islands are hidden in the cockpit pass so they do not cover the
+portrait camera. A restrained texture-fed fill replaces the HDR environment
+the scanned materials expected while retaining the shared daylight key.
+
+The five gauge faces now have their authored texture and markings, but the
+source needles are baked into static meshes. The old procedural live needles
+were removed with the mock-up; claiming live instruments now would be false.
+`CarView` still supplies RPM and speed, ready for separable needle geometry or
+an overlay once the production cabin is chosen.
+
+The exact scale is covered by a unit test. Lint, the full test suite and the
+production/Android builds are the remaining release checks for this pass.
+
 ## 2026-09-20 — Reference-led cockpit pass and inherited-code audit
 
 The placeholder cabin is gone. The composition now follows
