@@ -49,10 +49,15 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      # The runner image already carries the Android SDK, so there is nothing
+      # to set up — only to make sure the two packages this project compiles
+      # against are present. android-actions/setup-android is deliberately not
+      # used: it installs the retired `tools` package by default and fails.
+      - name: Ensure SDK packages
+        run: |
+          sdkmanager=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
       - run: npm ci
 

@@ -43,7 +43,8 @@ edges, and the launcher icon is the art target's sky. Regenerating it in CI
 with `cap add android` would throw all of that away every run.
 
 `.github/workflows/pages.yml` additionally publishes the web build to GitHub
-Pages. Not a shipping target — the game ships as an APK — but installing an APK
+Pages, on a manual trigger — a public website is the repository owner's call,
+not a push's. Not a shipping target — the game ships as an APK — but installing an APK
 costs a minute and opening a URL costs a second, and Phase 2 is tuned by
 repetition. Chrome on Android runs the same Blink engine as the WebView, so the
 one thing it cannot tell you is exactly the thing Phase 6 is watching for:

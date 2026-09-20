@@ -30,9 +30,12 @@ Open it on the phone, tap it, allow installs from your browser when asked. It
 asks for no permissions, because it has none. Three fingers anywhere on the
 screen toggles the debug readout.
 
-The same push publishes the web build to GitHub Pages, which is the faster loop
-for judging handling — a URL is a second, an APK install is a minute. What it
-can't tell you is WebView touch latency, which is Phase 6's known risk.
+There is also a **Pages** workflow that publishes the web build to a URL — a
+much faster loop for judging handling, since a URL is a second and an APK
+install is a minute. It is manual, and needs Settings → Pages → Source set to
+GitHub Actions first, because publishing a public site is your call rather than
+a push's. What it can't tell you is WebView touch latency, which is Phase 6's
+known risk.
 
 The codebase is split into sealed domains so it can be worked on from several
 directions at once — see [docs/06-modules.md](docs/06-modules.md).

@@ -8,19 +8,15 @@
 # you is precisely what Phase 6 is watching for: WebView-specific touch
 # latency. Judge feel here, confirm it in the app.
 #
-# Needs Settings -> Pages -> Source: GitHub Actions, once.
+# Manual on purpose. Publishing this puts a public website on the repository,
+# which is a decision for the owner and not for a push, and the job cannot even
+# run until Settings -> Pages -> Source is set to GitHub Actions. Once it is,
+# switch this to a push trigger if the fast loop turns out to be worth it.
 
 name: Pages
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - claude/android-driving-game-plan-pw5z30
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
 
 permissions:
   contents: read
