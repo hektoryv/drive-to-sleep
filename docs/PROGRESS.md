@@ -762,3 +762,65 @@ car's own state, all continuous — nothing in the mix starts, stops or repeats.
 
 **Next:** Phase 3 — vegetation and roadside furniture, the two biggest
 remaining gaps to the art target. And a listen, which only the owner can do.
+
+---
+
+## 2026-09-20 — Vegetation, and the roadside stops being empty
+
+**Built:** billboard vegetation, the largest remaining gap between what the
+game looks like and `docs/reference/art-target.png` — which is full of dark
+shrub clusters and had, until now, none.
+
+- **The billboard is built in the vertex shader.** The buffer holds one anchor
+  position repeated four times plus a corner offset; the shader expands it
+  around the anchor. Nothing is recomputed as the camera turns, so several
+  thousand plants cost one draw call and no per-frame CPU work at all.
+- **Cylindrical, not spherical.** The expansion uses *world* up rather than the
+  camera's. The camera rolls with the car (ADR-0002's attitude springs), and
+  plants that roll with it read as the world tilting rather than the car
+  leaning.
+- **The silhouette is drawn, not sampled.** No texture anywhere: a mound is
+  four circles maxed together and a spire is a tapering width, both cut out
+  with `discard`. Every plant gets a different outline from one float of
+  variation, the APK gains no art assets, and because it discards rather than
+  blends there is no back-to-front sorting to do.
+- **Placement is deterministic and clumped.** Everything about a plant comes
+  from hashing its station index and slot, so it lands in the same place
+  however many times the window has scrolled past it. Density is a slow noise
+  field along the road, so you drive through thickets and out into clearings —
+  a uniform scatter reads as wallpaper however well each plant is drawn.
+
+**Learned / noted:**
+
+- **Interpolate the centreline, do not reuse the station's height.** The first
+  version jittered plants along the 4 m station spacing — necessary, or they
+  land on a visible grid — but took the ground height from the station they
+  started at. On a 7.5% gradient that is enough error to leave a shrub floating
+  or half-buried. Plants now interpolate position between the two stations they
+  sit between, and sample `terrainHeightAt` at the interpolated distance, which
+  is the same function the terrain mesh uses, so they cannot disagree with the
+  ground they stand on.
+- **`inverse()` does not exist in GLSL ES 1.00**, which is what three.js
+  compiles by default even on a WebGL2 context. The first vertex shader used it
+  to get the billboard's right vector back out of view space. The fix is better
+  than the original: build the frame in world space and carry it *into* view
+  space, which needs no inverse and hands the fragment shader a world-space
+  normal for free.
+- **The first spires were flat-topped black obelisks.** The width function held
+  roughly constant and the top was chopped off with a hard clamp. Caught on the
+  contact sheet, which is exactly what it is for. They taper to a point now.
+- **The shared lighting and fog GLSL is now exported** from `view/materials.ts`
+  rather than private to it. Vegetation must fog on precisely the same curve as
+  the ground it stands on, and two fog implementations that agree today will
+  disagree the first time one of them is tuned.
+
+**Seen:** `--seed 7 --at 620 --time golden` is the closest the game has come to
+the art target — dark shrub silhouettes scattered across a warm plain under a
+violet sky. `--seed 3 --at 2400 --time noon` and `--seed 11 --at 900 --time
+morning` show the same thing works in daylight against green.
+
+**Next:** roadside furniture — guardrail, chevrons, telegraph poles. The
+roadside still has no *near-field* speed cue: vegetation starts 7.5 m out
+because a maintained verge is bare, so nothing sweeps past close to the car.
+Telegraph poles are the classic answer and the reason every driving game since
+1982 has had them.

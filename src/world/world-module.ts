@@ -26,6 +26,7 @@ import { createRoad, type WorldRoad } from './gen/road-query.js';
 import { createRoadMesh, type RoadMesh } from './view/road-mesh.js';
 import { createTerrainMesh, type TerrainMesh } from './view/terrain-mesh.js';
 import { createSky, type Sky } from './view/sky.js';
+import { createVegetation, type Vegetation } from './view/vegetation.js';
 import {
   createRoadMaterial,
   createTerrainMaterial,
@@ -58,6 +59,7 @@ export function createWorldModule(): WorldModule {
   let terrainMesh: TerrainMesh | undefined;
   let sky: Sky | undefined;
   let ridges: Ridges | undefined;
+  let vegetation: Vegetation | undefined;
   let roadMaterial: THREE.ShaderMaterial | undefined;
   let terrainMaterial: THREE.ShaderMaterial | undefined;
 
@@ -111,6 +113,7 @@ export function createWorldModule(): WorldModule {
 
     roadMesh.rebuild(stations, ox, oy, oz);
     terrainMesh.rebuild(stations, ox, oy, oz);
+    vegetation?.rebuild(stations, ox, oy, oz);
 
     lastBuiltNextIndex = stations.nextIndex;
     builtCount++;
@@ -137,8 +140,9 @@ export function createWorldModule(): WorldModule {
       terrainMesh = createTerrainMesh(terrainMaterial, capacity);
       sky = createSky(uniforms);
       ridges = createRidges(uniforms);
+      vegetation = createVegetation(uniforms, capacity);
 
-      context.scene.add(sky.mesh, ridges.group, terrainMesh.mesh, roadMesh.mesh);
+      context.scene.add(sky.mesh, ridges.group, terrainMesh.mesh, roadMesh.mesh, vegetation.mesh);
       applyDaylight();
     },
 
@@ -183,6 +187,7 @@ export function createWorldModule(): WorldModule {
       terrainMesh?.dispose();
       sky?.dispose();
       ridges?.dispose();
+      vegetation?.dispose();
       roadMaterial?.dispose();
       terrainMaterial?.dispose();
     },

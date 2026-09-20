@@ -29,7 +29,7 @@ would close the gap.
 - [x] Time-of-day cycle driving sun position and every palette
 - [x] Sky: four-stop gradient, sun disc, halo, horizon wash, clouds, stars
 - [x] Distant mountain layers with aerial perspective and real parallax
-- [ ] Vegetation billboards — the dark shrub clusters the target is full of
+- [x] Vegetation billboards — the dark shrub clusters the target is full of
 - [ ] Roadside furniture: guardrail, chevron signs, telegraph poles
 - [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
 - [ ] Double yellow centre lines rather than a single white one

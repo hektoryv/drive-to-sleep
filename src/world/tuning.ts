@@ -82,6 +82,56 @@ export const EVENTS = {
   BLEND_M: 90,
 } as const;
 
+/**
+ * Roadside vegetation — the dark shrub clusters the art target is full of.
+ *
+ * Billboards, per ADR-0003's 2.5D half. Everything here trades between a
+ * roadside that feels inhabited and one that costs a frame.
+ */
+export const VEGETATION = {
+  /**
+   * Candidate plants per station, each one either placed or skipped. With
+   * 4 m stations this is the *ceiling* on density, not the density.
+   */
+  PER_STATION: 3,
+  /**
+   * Fraction of candidates that survive, at the thickest. Lower = sparser
+   * everywhere; the clumping comes from COVER_SCALE_M, not from here.
+   */
+  COVER_MAX: 0.62,
+  /** Floor, so a clearing is a clearing and not a desert. */
+  COVER_MIN: 0.06,
+  /**
+   * Metres over which cover rises and falls. Long enough that you drive
+   * through a thicket and out the other side rather than past a texture.
+   */
+  COVER_SCALE_M: 260,
+
+  /** Nearest and furthest a plant may stand from the centreline, metres. */
+  NEAR_M: 7.5,
+  FAR_M: 90,
+  /**
+   * Bias on the lateral distribution. Above 1 pushes plants outward, which
+   * keeps the verge clear and the middle distance full.
+   */
+  LATERAL_BIAS: 1.7,
+
+  /** Size range, metres. Width is derived from height. */
+  MIN_HEIGHT_M: 1.1,
+  MAX_HEIGHT_M: 3.4,
+  /** Width as a multiple of height. Above 1 = squat and shrubby. */
+  ASPECT: 1.15,
+  /** Fraction that are the tall narrow kind rather than a mound. */
+  SPIRE_FRACTION: 0.18,
+
+  /**
+   * How far a plant sinks into the ground, as a fraction of its height. A
+   * billboard standing exactly on the surface shows a hard straight edge
+   * where it meets the ground on a slope.
+   */
+  SINK: 0.06,
+} as const;
+
 export const TERRAIN = {
   /** How far the terrain ribbon extends either side of the road, metres. */
   WIDTH_M: 260,

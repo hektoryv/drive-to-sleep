@@ -101,20 +101,26 @@ says nothing about how it feels getting there.
 
 ---
 
-## Phase 3 — The view *(next)*
+## Phase 3 — The view *(in progress)*
 
 **Goal:** it looks good.
 
-- [ ] Sky: gradient shader, sun disc, horizon glow, stars, moon
-- [ ] Time-of-day cycle driving sun position and all palettes
-- [ ] Fog derived from sky colour, plus height fog
+- [x] Sky: gradient shader, sun disc, horizon glow, clouds, stars
+- [x] Time-of-day cycle driving sun position and all palettes
+- [x] Fog derived from sky colour
 - [x] Filmic tonemapping — in since Phase 0 (ADR-0007)
-- [ ] Colour grading
-- [ ] Distant mountain impostor layers with parallax
-- [ ] Instanced billboard props with the near-3D cross-fade band
+- [x] Distant mountain impostor layers with parallax
+- [x] Billboard vegetation — mounds and spires, silhouette drawn in the
+      fragment shader, one draw call
+- [ ] The moon as a night key light
+- [ ] Height fog on top of the distance fog
+- [ ] Roadside furniture: guardrail, chevron signs, telegraph poles. The
+      near-field speed cue the roadside still lacks — vegetation starts 7.5 m
+      out and a maintained verge is bare, so nothing sweeps past close.
+- [ ] The near-3D cross-fade band, for props close enough that flatness shows
 - [ ] Biome parameter sets and distance-driven blending
 - [ ] Prop tables per biome, weighted by blend
-- [ ] Post stack: bloom, vignette, grain
+- [ ] Colour grading, and the post stack: bloom, vignette, grain
 - [ ] Quality tiers
 
 **Exit:** a contact sheet of ~20 screenshots across seeds, biomes and times of

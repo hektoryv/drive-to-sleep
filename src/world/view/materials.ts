@@ -45,8 +45,14 @@ export function createWorldUniforms(): WorldUniforms {
   };
 }
 
-/** Shared GLSL: lighting and fog, so every surface resolves identically. */
-const COMMON = /* glsl */ `
+/**
+ * Shared GLSL: lighting and fog, so every surface resolves identically.
+ *
+ * Exported because the vegetation billboards need to fog on exactly the same
+ * curve as the terrain they stand on. Two fog implementations that agree
+ * today will disagree the first time one of them is tuned.
+ */
+export const WORLD_COMMON_GLSL = /* glsl */ `
   uniform vec3 uSunDir;
   uniform vec3 uSunColor;
   uniform vec3 uAmbient;
@@ -98,7 +104,7 @@ const ROAD_FRAG = /* glsl */ `
   uniform float uEdgeLine;
   varying float vLateral;
   varying float vHalfWidth;
-  ${COMMON}
+  ${WORLD_COMMON_GLSL}
 
   // One antialiased band, centred on "centre" with half-width "hw".
   // GLSL reserves "half" in some profiles, hence the abbreviation.
@@ -143,7 +149,7 @@ const TERRAIN_FRAG = /* glsl */ `
   uniform vec3 uLow;
   uniform vec3 uHigh;
   uniform vec3 uRock;
-  ${COMMON}
+  ${WORLD_COMMON_GLSL}
 
   void main() {
     // Two cues, both cheap and both doing a lot of work: height tints the
