@@ -10,9 +10,9 @@ import type { Surface } from './world.js';
 /**
  * Intended physical bumper-to-bumper length of the player car, metres.
  *
- * The cockpit is now screen-space art, but future body, traffic and collision
- * representations still need one shared real-world size without importing
- * another domain's tuning.
+ * The current procedural cockpit is camera-relative rather than a full body,
+ * but future body, traffic and collision representations still need one shared
+ * real-world size without importing another domain's tuning.
  */
 export const PLAYER_CAR_LENGTH_M = 4.291;
 

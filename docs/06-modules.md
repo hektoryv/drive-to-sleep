@@ -1,6 +1,6 @@
 # 06 — Modules and domain ownership
 
-*Last updated: 2026-09-21*
+*Last updated: 2026-09-20*
 
 This project is built so that several people — or several agents — can work on
 different parts of it at once without their changes reaching each other. That
@@ -18,7 +18,7 @@ its shaders and its tuning constants.
 | **sim** | The car. Vehicle model, attitude, traffic, collision, scoring. | `src/sim/` |
 | **input** | Touch handling, control curves, the dynamic-origin scheme. | `src/input/` |
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
-| **cockpit** | The 70s interior. Depth-separated sprite cards, wheel, gauges, mirror. Drawn in its own pass (ADRs 0017–0019). | `src/cockpit/` |
+| **cockpit** | The 70s interior. Dash, wheel, gauges, mirror. Drawn in its own pass (ADR-0017). | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
 | **audio** | The engine note, wind and tyres. Synthesised — no samples, no music. | `src/audio/` |
 | **fx** | Particles, camera shake. | `src/fx/` |
@@ -74,7 +74,7 @@ export function createCockpitModule(): GameModule {
 
     // Pass one: build state, register anything you provide.
     init(ctx) {
-      ctx.scene.add(buildCockpitSprites());
+      ctx.scene.add(buildDashGeometry());
     },
 
     // Pass two: resolve what you need. Everything has run init by now, so
@@ -132,7 +132,7 @@ each domain owns its own:
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
 | `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
-| `src/cockpit/tuning.ts` | sprite placement, wheel motion, painted light |
+| `src/cockpit/tuning.ts` | cabin geometry, wheel, colours, cabin light |
 
 The rule from `05-conventions.md` still holds — no feel or look constant is
 written inline in logic — it has one home per domain instead of one shared file.

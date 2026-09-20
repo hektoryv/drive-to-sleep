@@ -152,7 +152,7 @@ constraint everything is sized against.
 | Frame time | 16.6 ms, with ~4 ms headroom → aim for 12 ms |
 | Draw calls | < 120 |
 | Triangles | < 150 k |
-| Textures | < 24 MB (atlases or tightly bounded card textures; no 4K assets) |
+| Textures | < 24 MB (atlases only; no 4K anything) |
 | Sim time | < 2 ms/frame |
 | GC allocation while driving | **zero** — pre-allocate everything, pool everything |
 | Startup to first frame | < 2 s |

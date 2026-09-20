@@ -7,6 +7,25 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-21 — Cockpit art is postponed; the procedural 3D cabin returns
+
+Device review rejected the depth-separated sprite attempt as well. Its planes,
+shadows and asymmetric crop solved specific defects in the first atlas, but the
+assembled result still did not look like a convincing interior. More elaborate
+temporary sprites would be production work pointed at the wrong asset.
+
+ADR-0020 restores the reference-led procedural 3D cabin from `f49c1e2`: dash,
+cowl, pillars, door cards, rotating wheel and five live instruments. The
+downloaded model and all sprite textures/loaders are removed. The separate
+cockpit render pass and the 4.291 m player-car contract remain; the fallback is
+camera-relative and does not change the world's metre scale.
+
+Final cockpit art is now explicitly postponed until there is a purpose-built,
+separable interior model. Development returns to Phase 3, beginning with
+guardrail where the terrain falls away from the road. Architecture lint,
+TypeScript, all 212 tests, the production build and Android sync pass; the
+packaged web build contains no cockpit model or sprite assets.
+
 ## 2026-09-21 — The flat atlas becomes an asymmetric cockpit card model
 
 The first sprite replacement was technically stable and artistically wrong.

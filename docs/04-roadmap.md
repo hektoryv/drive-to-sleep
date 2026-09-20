@@ -1,6 +1,6 @@
 # 04 — Roadmap
 
-*Last updated: 2026-09-20*
+*Last updated: 2026-09-21*
 
 Nine phases. Each has a **goal**, a **task list**, and an **exit criterion**
 that must be demonstrable before the next phase starts. Progress is logged in
@@ -133,21 +133,25 @@ popping.
 
 ---
 
-## Phase 4 — The cockpit *(in progress)*
+## Phase 4 — The cockpit *(postponed; procedural fallback active)*
 
 **Goal:** you're sitting in the car.
 
 - [x] The second render pass the cabin needs to exist at all (ADR-0017)
-- [x] Asymmetric depth-separated cockpit cards (ADRs 0018–0019)
-- [x] Roof/headliner, angled driver door and near-horizontal dash top
-- [x] Separate steering-wheel sprite rotating with the finger
-- [x] Painted five-dial binnacle in the interior layer
-- [ ] Live needles: the painted needles are static; the sim data exists
-- [x] Dedicated dash and wheel contact-shadow cards
+- [x] Steering wheel: rim, three spokes, hub — rotating with the finger
+- [x] Layered dash, cowl, A-pillar, door-card and vent silhouettes
+- [x] Five-dial binnacle with the overlapping layout from the reference
+- [x] Live needles: tach and speedo driven by the sim
+- [x] Dial backlighting rising with falling ambient light
 - [ ] Glass specular streak across the dial covers
-- [x] Painted rear-view mirror placeholder
+- [ ] Rear-view mirror
 - [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon
-- [x] Faceted matte finishes authored across the card textures
+- [ ] Material finishes: matte vinyl / semi-gloss leather / brushed aluminium
+
+The listed geometry is the restored procedural 3D fallback. A downloaded
+full-car GLB and two sprite implementations all failed device review; ADR-0020
+postpones final cockpit art until a purpose-built, separable interior model is
+available. Phase 3 resumes in the meantime.
 
 **Exit:** a night screenshot where the dials are the only light source and the
 cabin is unmistakably a 70s sports car. That single image is the test.

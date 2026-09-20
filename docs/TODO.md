@@ -21,27 +21,11 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 - [ ] Mix balance — `MASTER.GAIN`, then the three `GAIN_MAX`/`GAIN_LOAD`
       values against each other. Phone speaker first, then headphones.
 
-## Next — Phase 4: The cockpit *(in progress)*
+## Next — Phase 3: The view *(resumed)*
 
-The full-car GLB failed on-device: fragmented scanned materials, incorrect
-occlusion and a style that fought the world. ADR-0018 replaces it with a
-brand-free sprite cockpit; ADR-0019 replaces its first flat atlas with a
-depth-separated, asymmetric card model.
-
-- [x] Separate shell, horizontal dash-top, dashboard, door and wheel cards
-- [x] Driver-eye crop: near left side present, passenger door outside the FOV
-- [x] Substantial roof/headliner and two soft contact-shadow cards
-- [x] Depth-weighted look-ahead parallax: near cards move farther than the shell
-- [x] Independent wheel sprite driven by interpolated steering
-- [x] Painted five-dial cluster. Its needles are currently static;
-      `CarView` still carries `rpm`, `maxRpm` and `speedMs` for the future
-      authored or overlaid live needles.
-- [x] The `daylight` contract — the cabin is lit by the same sun as the road
-- [x] Daylight tint plus deeper dash/wheel contact shadows after sunset
-- [x] Painted rear-view mirror placeholder
-- [ ] Add separate tach and speed needles so the gauges are live again
-
-## Later — Phase 3: The view *(paused)*
+The interior art is postponed (ADR-0020). The procedural 3D cabin is the
+working placeholder, so development returns to the outside world. Ordered by
+how much each item closes the gap to `docs/reference/art-target.png`.
 
 Measured against `docs/reference/art-target.png`. Ordered by how much each
 would close the gap.
@@ -53,7 +37,7 @@ would close the gap.
 - [x] Telegraph poles and wires — the near-field speed cue
 - [x] Chevron signs on tight corners — the game's only advance warning, given
       as scenery rather than as interface
-- [ ] Guardrail where the ground falls away
+- [ ] **Guardrail where the ground falls away** — the next implementation task
 - [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
 - [x] Solid double-yellow centre lines with white edge markings
 - [ ] Biome parameter sets and distance-driven blending
@@ -61,6 +45,19 @@ would close the gap.
 - [ ] Colour grading, bloom, vignette, animated dither grain
 - [ ] The moon as a night key light
 - [ ] Quality tiers
+
+## Parked — Phase 4: The cockpit
+
+The downloaded full-car GLB and both sprite approaches failed on a real device.
+ADR-0020 restores the earlier procedural 3D cabin so the game remains drivable,
+with working instruments, while final interior production is postponed.
+
+- [x] Second cockpit render pass and daylight integration
+- [x] Procedural 3D dash, cowl, pillars, door cards and rotating wheel
+- [x] Five-dial cluster with live tachometer and speedometer needles
+- [x] Dial backlighting driven by `daylight.instrumentGlow`
+- [ ] Replace the placeholder with a purpose-built, separable interior model
+- [ ] Rear-view mirror and final material/detail pass after that model exists
 
 ## Later
 
@@ -97,9 +94,7 @@ each phase opens rather than duplicated here.
 
 Things to resolve before the phase that needs them:
 
-- **Rear-view mirror** (Phase 4): the shell has a correctly placed painted
-  placeholder. For its eventual moving reflection, use render-to-texture or a
-  faked gradient
+- **Rear-view mirror** (postponed Phase 4): true render-to-texture, or a faked gradient
   with moving road lines? RTT costs a second scene pass; the fake may be
   indistinguishable in a mirror that's ~80 px tall. Decide by trying the fake
   first.
@@ -114,7 +109,7 @@ Things to resolve before the phase that needs them:
   start of the current biome? Exact is more continuous; biome-start avoids
   dropping you mid-hairpin on a cold open.
 - **Aperture height and FOV** (Phase 4 / Phase 2): now 61% and 72°. The
-  aperture was re-framed against the real cabin and target; judge the FOV on a
+  aperture was re-framed against the cabin and target; judge the FOV on a
   real device at speed, because a screenshot cannot settle it.
 - **Look-ahead strength** (Phase 2): 0.45, capped at 14°. Chosen from a
   sequence of stills through one corner, which shows where the view ends up but
