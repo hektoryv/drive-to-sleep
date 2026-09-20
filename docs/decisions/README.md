@@ -24,3 +24,4 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0016](ADR-0016-sound-after-all.md) | There is sound after all — synthesised, no music, no samples | Accepted |
 | [0017](ADR-0017-cockpit-second-pass.md) | The cockpit is a second pass with its own frustum | Accepted |
 | [0018](ADR-0018-layered-cockpit-sprites.md) | The cockpit is layered 2.5D art, not a full-car model | Accepted |
+| [0019](ADR-0019-depth-separated-cockpit-cards.md) | Cockpit sprites occupy angled planes and an asymmetric crop | Accepted (refines 0018) |

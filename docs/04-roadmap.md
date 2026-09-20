@@ -138,15 +138,16 @@ popping.
 **Goal:** you're sitting in the car.
 
 - [x] The second render pass the cabin needs to exist at all (ADR-0017)
-- [x] Layered exterior/interior/lighting sprite atlas (ADR-0018)
+- [x] Asymmetric depth-separated cockpit cards (ADRs 0018–0019)
+- [x] Roof/headliner, angled driver door and near-horizontal dash top
 - [x] Separate steering-wheel sprite rotating with the finger
 - [x] Painted five-dial binnacle in the interior layer
-- [ ] Live needles: the atlas needles are static; the sim data exists
-- [x] Painted cabin shadows rising modestly with falling ambient light
+- [ ] Live needles: the painted needles are static; the sim data exists
+- [x] Dedicated dash and wheel contact-shadow cards
 - [ ] Glass specular streak across the dial covers
 - [x] Painted rear-view mirror placeholder
 - [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon
-- [x] Faceted matte finishes authored into the sprite atlas
+- [x] Faceted matte finishes authored across the card textures
 
 **Exit:** a night screenshot where the dials are the only light source and the
 cabin is unmistakably a 70s sports car. That single image is the test.

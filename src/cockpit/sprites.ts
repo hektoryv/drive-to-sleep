@@ -1,11 +1,18 @@
-/** Layered, screen-stable cockpit sprites. */
+/** A small 2.5D card model: authored sprites on physically separated planes. */
 
 import * as THREE from 'three';
 import type { DaylightView, Rgb } from '../contracts/daylight.js';
 import { COCKPIT_LAYER } from '../contracts/view.js';
-import { COCKPIT_SPRITES } from './tuning.js';
+import { COCKPIT_CARDS, type CardPlacement } from './tuning.js';
 
-const ATLAS_URL = new URL('./assets/cockpit-sprite-atlas.png', import.meta.url).href;
+const ASSET_URLS = {
+  shell: new URL('./assets/cockpit-shell.png', import.meta.url).href,
+  dashTop: new URL('./assets/dashboard-top.png', import.meta.url).href,
+  dashFace: new URL('./assets/dashboard-face.png', import.meta.url).href,
+  driverDoor: new URL('./assets/driver-door.png', import.meta.url).href,
+  wheel: new URL('./assets/steering-wheel.png', import.meta.url).href,
+} as const;
+
 const WHITE = new THREE.Color(0xffffff);
 
 export interface CockpitSprites {
@@ -16,31 +23,46 @@ export interface CockpitSprites {
   dispose(): void;
 }
 
+interface Card {
+  readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  readonly geometry: THREE.PlaneGeometry;
+  readonly material: THREE.MeshBasicMaterial;
+  readonly texture: THREE.Texture | undefined;
+  readonly baseX: number;
+  readonly parallax: number;
+}
+
 export function createCockpitSprites(): CockpitSprites {
   const root = new THREE.Group();
-  root.name = 'layered-cockpit-sprites';
+  root.name = 'cockpit-card-model';
 
-  const atlas = new THREE.TextureLoader().load(ATLAS_URL);
-  atlas.colorSpace = THREE.SRGBColorSpace;
-  atlas.anisotropy = 4;
-
-  const fill = createSolidLayer(
-    'cockpit-lower-fill', COCKPIT_SPRITES.CABIN_FILL, 0,
+  const fill = createSolidCard('cockpit-lower-fill', COCKPIT_CARDS.CABIN_FILL, 0);
+  const shell = createTexturedCard(
+    'cockpit-shell', ASSET_URLS.shell, COCKPIT_CARDS.SHELL, 1,
   );
-  const exterior = createLayer(
-    'cockpit-exterior', atlas, 0, 0.5, COCKPIT_SPRITES.EXTERIOR, 1,
+  const dashTop = createTexturedCard(
+    'dashboard-top', ASSET_URLS.dashTop, COCKPIT_CARDS.DASH_TOP, 2,
   );
-  const interior = createLayer(
-    'cockpit-interior', atlas, 0.5, 0.5, COCKPIT_SPRITES.INTERIOR, 2,
+  const door = createTexturedCard(
+    'driver-door', ASSET_URLS.driverDoor, COCKPIT_CARDS.DRIVER_DOOR, 3,
   );
-  const lighting = createLayer(
-    'cockpit-lighting', atlas, 0, 0, COCKPIT_SPRITES.LIGHTING, 3,
-  );
-  const wheel = createLayer(
-    'steering-wheel', atlas, 0.5, 0, COCKPIT_SPRITES.WHEEL, 4,
+  const dash = createTexturedCard(
+    'dashboard-face', ASSET_URLS.dashFace, COCKPIT_CARDS.DASH_FACE, 4,
   );
 
-  root.add(fill.mesh, exterior.mesh, interior.mesh, lighting.mesh, wheel.mesh);
+  const shadowTexture = createShadowTexture();
+  const dashShadow = createShadowCard(
+    'dashboard-contact-shadow', shadowTexture, COCKPIT_CARDS.DASH_SHADOW, 5,
+  );
+  const wheelShadow = createShadowCard(
+    'wheel-contact-shadow', shadowTexture, COCKPIT_CARDS.WHEEL_SHADOW, 6,
+  );
+  const wheel = createTexturedCard(
+    'steering-wheel', ASSET_URLS.wheel, COCKPIT_CARDS.WHEEL, 7,
+  );
+
+  const cards = [fill, shell, dashTop, door, dash, dashShadow, wheelShadow, wheel];
+  root.add(...cards.map((card) => card.mesh));
   root.traverse((object) => object.layers.set(COCKPIT_LAYER));
 
   const key = new THREE.Color();
@@ -52,99 +74,138 @@ export function createCockpitSprites(): CockpitSprites {
     setDaylight(daylight) {
       setSrgb(key, daylight.sunLight);
       setSrgb(ambient, daylight.ambient);
+      tint.copy(ambient).lerp(key, 0.38);
+      tint.lerp(WHITE, 0.32 + daylight.daylight * 0.4);
 
-      // The atlas owns the painted facets. Multiplying by a restrained shared
-      // tint lets sunset and night reach the cabin without turning those
-      // authored planes back into unstable, per-triangle 3D lighting.
-      tint.copy(ambient).lerp(key, 0.42);
-      tint.lerp(WHITE, 0.34 + daylight.daylight * 0.36);
-      exterior.material.color.copy(tint);
-      interior.material.color.copy(tint).lerp(WHITE, daylight.instrumentGlow * 0.12);
-      wheel.material.color.copy(tint).multiplyScalar(0.92);
-      // Linear-space 0.02 lands as a near-black violet after sRGB output.
-      // A larger value looks surprisingly grey and exposes the wheel cutout.
-      fill.material.color.copy(tint).multiplyScalar(0.02);
-      lighting.material.opacity =
-        COCKPIT_SPRITES.LIGHTING_OPACITY_MIN +
-        (1 - daylight.daylight) * COCKPIT_SPRITES.LIGHTING_OPACITY_DUSK +
-        daylight.instrumentGlow * COCKPIT_SPRITES.LIGHTING_OPACITY_GLOW;
+      shell.material.color.copy(tint).lerp(WHITE, 0.08);
+      dashTop.material.color.copy(tint);
+      dash.material.color.copy(tint).lerp(WHITE, daylight.instrumentGlow * 0.1);
+      door.material.color.copy(tint);
+      wheel.material.color.copy(tint).multiplyScalar(0.9);
+      fill.material.color.copy(tint).multiplyScalar(0.018);
+
+      const shadowOpacity = THREE.MathUtils.lerp(
+        COCKPIT_CARDS.SHADOW_OPACITY_NIGHT,
+        COCKPIT_CARDS.SHADOW_OPACITY_DAY,
+        daylight.daylight,
+      );
+      dashShadow.material.opacity = shadowOpacity;
+      wheelShadow.material.opacity = shadowOpacity * 0.78;
     },
     setLookYaw(lookYaw) {
-      root.position.x = -lookYaw * COCKPIT_SPRITES.LOOK_SHIFT_M_PER_RAD;
+      for (const card of cards) {
+        card.mesh.position.x = card.baseX - lookYaw * card.parallax;
+      }
     },
     setSteer(steerAngle) {
-      wheel.mesh.rotation.z = -steerAngle * COCKPIT_SPRITES.STEERING_RATIO;
+      wheel.mesh.rotation.z = -steerAngle * COCKPIT_CARDS.STEERING_RATIO;
     },
     dispose() {
-      for (const layer of [fill, exterior, interior, lighting, wheel]) {
-        layer.geometry.dispose();
-        layer.material.dispose();
+      for (const card of cards) {
+        card.geometry.dispose();
+        card.material.dispose();
+        card.texture?.dispose();
       }
-      atlas.dispose();
+      shadowTexture.dispose();
       root.removeFromParent();
     },
   };
 }
 
-interface LayerPlacement {
-  readonly width: number;
-  readonly height: number;
-  readonly x: number;
-  readonly y: number;
-}
-
-interface Layer {
-  readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
-  readonly geometry: THREE.PlaneGeometry;
-  readonly material: THREE.MeshBasicMaterial;
-}
-
-function createLayer(
+function createTexturedCard(
   name: string,
-  atlas: THREE.Texture,
-  atlasX: number,
-  atlasY: number,
-  placement: LayerPlacement,
+  url: string,
+  placement: CardPlacement,
   renderOrder: number,
-): Layer {
-  const geometry = new THREE.PlaneGeometry(placement.width, placement.height);
-  const uv = geometry.getAttribute('uv');
-  for (let i = 0; i < uv.count; i++) {
-    uv.setXY(i, atlasX + uv.getX(i) * 0.5, atlasY + uv.getY(i) * 0.5);
-  }
-
+): Card {
+  const texture = new THREE.TextureLoader().load(url);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
   const material = new THREE.MeshBasicMaterial({
-    map: atlas,
+    map: texture,
     transparent: true,
     alphaTest: 0.004,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = name;
-  mesh.position.set(placement.x, placement.y, -COCKPIT_SPRITES.DISTANCE_M);
-  mesh.renderOrder = renderOrder;
-  return { mesh, geometry, material };
+  return makeCard(name, placement, renderOrder, material, texture);
 }
 
-function createSolidLayer(
+function createSolidCard(
   name: string,
-  placement: LayerPlacement,
+  placement: CardPlacement,
   renderOrder: number,
-): Layer {
-  const geometry = new THREE.PlaneGeometry(placement.width, placement.height);
+): Card {
   const material = new THREE.MeshBasicMaterial({
-    color: 0x0a0910,
+    color: 0x08070d,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
+  return makeCard(name, placement, renderOrder, material);
+}
+
+function createShadowCard(
+  name: string,
+  texture: THREE.Texture,
+  placement: CardPlacement,
+  renderOrder: number,
+): Card {
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    color: 0x08060d,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  return makeCard(name, placement, renderOrder, material);
+}
+
+function makeCard(
+  name: string,
+  placement: CardPlacement,
+  renderOrder: number,
+  material: THREE.MeshBasicMaterial,
+  texture?: THREE.Texture,
+): Card {
+  const geometry = new THREE.PlaneGeometry(placement.width, placement.height);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = name;
-  mesh.position.set(placement.x, placement.y, -COCKPIT_SPRITES.DISTANCE_M);
+  mesh.rotation.order = 'YXZ';
+  mesh.position.set(placement.x, placement.y, placement.z);
+  mesh.rotation.set(placement.pitch ?? 0, placement.yaw ?? 0, 0);
   mesh.renderOrder = renderOrder;
-  return { mesh, geometry, material };
+  return {
+    mesh,
+    geometry,
+    material,
+    texture,
+    baseX: placement.x,
+    parallax: placement.parallax,
+  };
+}
+
+/** Small reusable radial alpha texture for painted contact-shadow cards. */
+function createShadowTexture(size = 64): THREE.DataTexture {
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const nx = (x / (size - 1)) * 2 - 1;
+      const ny = (y / (size - 1)) * 2 - 1;
+      const distance = Math.sqrt(nx * nx + ny * ny * 2.4);
+      const alpha = Math.max(0, Math.min(1, (1 - distance) * 2.2));
+      const offset = (y * size + x) * 4;
+      data[offset] = 0;
+      data[offset + 1] = 0;
+      data[offset + 2] = 0;
+      data[offset + 3] = Math.round(alpha * 255);
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.needsUpdate = true;
+  return texture;
 }
 
 /** Daylight contract colours are sRGB palette values, not linear triples. */

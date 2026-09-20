@@ -72,10 +72,10 @@ Key decisions that make this work:
 - **The wheel's bottom is off-screen.** We see the top of the rim and the
   spokes. Showing the whole wheel would waste a third of the display on the
   inside of a car.
-- **The dash is layered rather than monolithic.** Exterior, interior, painted
-  lighting and wheel are sampled independently in the cockpit camera pass.
-  The camera-facing art stays crisp while a small lateral offset preserves
-  look-ahead parallax and the wheel remains free to rotate (ADR-0018).
+- **The dash is layered rather than monolithic.** Roof shell, near-horizontal
+  scuttle, vertical dashboard, angled driver's door, shadows and wheel occupy
+  separate cards in the cockpit pass. Their local angles create real depth;
+  depth-weighted lateral offsets preserve look-ahead parallax (ADR-0019).
 
 ## The car interior
 
@@ -173,8 +173,9 @@ Per ADR-0003:
 
 - **Real 3D:** road surface, verges, near terrain, traffic and near props (out
   to ~120 m).
-- **Layered 2.5D:** the cockpit atlas — exterior, interior, lighting and wheel
-  in the second camera pass (ADR-0018).
+- **Layered 2.5D:** the cockpit card model — shell, horizontal dash top,
+  vertical dash, angled door, shadows and wheel in the second camera pass
+  (ADRs 0018–0019).
 - **Billboarded / impostor:** mid and far vegetation and rocks, and all distant
   mountain silhouettes (layered parallax cards at 3–4 depths).
 - **Why it works here:** the camera never leaves the road and never looks

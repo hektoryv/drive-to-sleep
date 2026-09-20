@@ -7,6 +7,37 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-21 — The flat atlas becomes an asymmetric cockpit card model
+
+The first sprite replacement was technically stable and artistically wrong.
+Vertically stretching one landscape atlas made the cabin tall and toy-like,
+showed both doors as though the camera were centred outside the car, reduced
+the ceiling to a strip and left every layer visibly coplanar. Painted purple
+over the same plane was tint, not shadow. The owner's device review caught all
+four failures immediately.
+
+ADR-0019 replaces that atlas with five purpose-built transparent textures from
+one new driver-eye master composition: deep roof/windshield shell, horizontal
+dash top/scuttle, vertical asymmetric dashboard, near driver's door and wheel.
+The passenger door and right exterior mirror are intentionally outside the
+portrait field of view. The wheel is large, close and cropped by the bottom;
+showing less cabin is what gives it adult-car scale.
+
+These are not parallel billboards. The scuttle is pitched almost horizontal,
+the door yaws inward, the wheel has its own rake, and the cards occupy different
+depths. Two generated-in-code soft shadow cards sit beneath the dash overhang
+and wheel. Look-ahead moves each card according to depth, so the near wheel and
+door slide farther than the roof shell without distorting their art.
+
+The five runtime PNGs were Lanczos-downscaled for the phone GPU: 1.24 MB on
+disk, about 9.25 MiB base RGBA / 12.3 MiB with mipmaps. The whole cockpit is
+eight draw calls and sixteen triangles. Golden-hour, steering and night frames
+were reviewed at 430×932; the wheel rotates independently, the road owns the
+windscreen, the headliner has real mass, contact shadows deepen at night, and
+the browser console is clean. Architecture lint, TypeScript, all 210 tests, the
+production build and the Capacitor Android sync pass with all five card textures
+present in the packaged web assets.
+
 ## 2026-09-21 — The device rejected the GLB; the cockpit becomes layered art
 
 The metrically corrected 930 model was still the wrong answer. On-device it

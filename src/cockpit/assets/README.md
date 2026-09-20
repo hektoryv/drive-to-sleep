@@ -1,13 +1,20 @@
-# Cockpit sprite atlas
+# Cockpit card art
 
-`cockpit-sprite-atlas.png` was generated for this project from the owner's
-supplied cockpit sprite-sheet reference using OpenAI's built-in image generator
-on 2026-09-21. It contains four transparent quadrants:
+These transparent sprites were generated for this project with OpenAI's
+built-in image generator on 2026-09-21. The owner's cockpit sheet and the
+project's portrait art target established the component design and palette; a
+new asymmetric master composition established the realistic driver-eye scale.
 
-1. exterior frame, hood and mirrors;
-2. dashboard and doors without a steering wheel;
-3. warm/cool lighting overlay;
-4. isolated steering wheel.
+| File | Runtime role |
+|---|---|
+| `cockpit-shell.png` | roof/headliner, driver-side A-pillar, mirror, bonnet and wipers |
+| `dashboard-top.png` | near-horizontal scuttle and upper dash surface |
+| `dashboard-face.png` | vertical five-dial dashboard and passenger-side falloff |
+| `driver-door.png` | near left door on an inward-angled card |
+| `steering-wheel.png` | isolated wheel on the closest tilted card |
 
-The atlas deliberately contains no marque, crest, model number or readable
-branding. Runtime code in `cockpit/sprites.ts` samples the quadrants separately.
+The source generations were downscaled with Lanczos filtering for the phone
+GPU. Together they occupy about 9.25 MiB before mipmaps and 1.24 MB on disk.
+They deliberately contain no marque, crest, model number or readable branding.
+Runtime assembly and two procedural contact-shadow cards live in
+`cockpit/sprites.ts` (ADR-0019).

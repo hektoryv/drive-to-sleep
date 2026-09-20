@@ -25,16 +25,19 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
 The full-car GLB failed on-device: fragmented scanned materials, incorrect
 occlusion and a style that fought the world. ADR-0018 replaces it with a
-brand-free layered sprite cockpit built directly for the portrait frame.
+brand-free sprite cockpit; ADR-0019 replaces its first flat atlas with a
+depth-separated, asymmetric card model.
 
-- [x] Separate exterior, interior, lighting and steering-wheel atlas layers
-- [x] Screen-stable 2.5D composition with restrained look-ahead parallax
+- [x] Separate shell, horizontal dash-top, dashboard, door and wheel cards
+- [x] Driver-eye crop: near left side present, passenger door outside the FOV
+- [x] Substantial roof/headliner and two soft contact-shadow cards
+- [x] Depth-weighted look-ahead parallax: near cards move farther than the shell
 - [x] Independent wheel sprite driven by interpolated steering
-- [x] Painted five-dial cluster. The atlas needles are currently static;
+- [x] Painted five-dial cluster. Its needles are currently static;
       `CarView` still carries `rpm`, `maxRpm` and `speedMs` for the future
       authored or overlaid live needles.
 - [x] The `daylight` contract — the cabin is lit by the same sun as the road
-- [x] Painted warm/cool shadow layer rising with `daylight.instrumentGlow`
+- [x] Daylight tint plus deeper dash/wheel contact shadows after sunset
 - [x] Painted rear-view mirror placeholder
 - [ ] Add separate tach and speed needles so the gauges are live again
 
@@ -94,7 +97,7 @@ each phase opens rather than duplicated here.
 
 Things to resolve before the phase that needs them:
 
-- **Rear-view mirror** (Phase 4): the atlas has a correctly placed painted
+- **Rear-view mirror** (Phase 4): the shell has a correctly placed painted
   placeholder. For its eventual moving reflection, use render-to-texture or a
   faked gradient
   with moving road lines? RTT costs a second scene pass; the fake may be

@@ -18,7 +18,7 @@ its shaders and its tuning constants.
 | **sim** | The car. Vehicle model, attitude, traffic, collision, scoring. | `src/sim/` |
 | **input** | Touch handling, control curves, the dynamic-origin scheme. | `src/input/` |
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
-| **cockpit** | The 70s interior. Layered atlas, wheel, gauges, mirror. Drawn in its own pass (ADRs 0017–0018). | `src/cockpit/` |
+| **cockpit** | The 70s interior. Depth-separated sprite cards, wheel, gauges, mirror. Drawn in its own pass (ADRs 0017–0019). | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
 | **audio** | The engine note, wind and tyres. Synthesised — no samples, no music. | `src/audio/` |
 | **fx** | Particles, camera shake. | `src/fx/` |

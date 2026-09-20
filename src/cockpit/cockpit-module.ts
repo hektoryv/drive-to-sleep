@@ -7,10 +7,10 @@
  *
  * ## Why the cabin still has a car-relative screen offset
  *
- * The sprite planes face the cockpit camera so their painted perspective never
- * distorts. `lookYaw` becomes a restrained lateral parallax shift instead of a
- * second 3D rotation: the cabin still moves opposite the driver's glance into
- * a bend, but its A-pillars cannot turn into skewed billboards.
+ * The card rig follows the cockpit camera, while its individual surfaces keep
+ * their authored local pitch/yaw: horizontal scuttle, vertical dash, angled
+ * door and tilted wheel. `lookYaw` becomes depth-weighted lateral parallax, so
+ * near cards move farther than the shell without skewing the painted art.
  *
  * Roll, pitch and heave are applied to *both*, so they cancel: in a real car
  * your head and the dash lean together, and the world is what swings.
@@ -76,8 +76,8 @@ export function createCockpitModule(): GameModule {
       // The eye, from the contract. render/ resolves it once, so the cabin and
       // the camera cannot sit in different places.
       root.position.set(view.eyeX, view.eyeY, view.eyeZ);
-      // Match the camera so the atlas remains front-facing; the small cabin
-      // movement from look-ahead is applied as 2D parallax below.
+      // Match the camera as a rig. Each card keeps its own local angle and the
+      // look-ahead movement is applied as depth-weighted parallax below.
       root.rotation.set(horizonPitch + view.pitch, view.heading + view.lookYaw, -view.roll);
       sprites?.setLookYaw(view.lookYaw);
 
