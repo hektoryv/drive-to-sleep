@@ -19,6 +19,7 @@ on:
     branches:
       - main
       - claude/android-driving-game-plan-pw5z30
+      - codex/cockpit-reference-pass
     paths-ignore:
       - 'docs/**'
       - '**/*.md'
