@@ -114,9 +114,10 @@ says nothing about how it feels getting there.
       fragment shader, one draw call
 - [ ] The moon as a night key light
 - [ ] Height fog on top of the distance fog
-- [ ] Roadside furniture: guardrail, chevron signs, telegraph poles. The
-      near-field speed cue the roadside still lacks — vegetation starts 7.5 m
-      out and a maintained verge is bare, so nothing sweeps past close.
+- [x] Telegraph poles and wires — the near-field speed cue. Something has to
+      pass *close* to the car, and a maintained verge is bare of everything else.
+- [ ] The rest of the roadside furniture: guardrail on the drops, chevron
+      signs on the tight corners
 - [ ] The near-3D cross-fade band, for props close enough that flatness shows
 - [ ] Biome parameter sets and distance-driven blending
 - [ ] Prop tables per biome, weighted by blend

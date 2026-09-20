@@ -83,6 +83,41 @@ export const EVENTS = {
 } as const;
 
 /**
+ * Telegraph poles and their wires.
+ *
+ * The roadside's *near-field* speed cue. Vegetation starts 7.5 m out because a
+ * maintained verge is bare, which means nothing sweeps past close to the car —
+ * and something passing close is most of what makes speed felt rather than
+ * read. Every driving game since 1982 has had these, for this reason.
+ */
+export const ROADSIDE = {
+  /**
+   * Stations between poles. At 4 m spacing, 10 is a pole every 40 m — about
+   * 1.4 s apart at 100 km/h. Fewer = a faster, busier rhythm; too few and it
+   * becomes a picket fence.
+   */
+  POLE_EVERY_STATIONS: 10,
+  /** Distance from the centreline, metres. Inside the vegetation, outside the verge. */
+  POLE_OFFSET_M: 8.2,
+  POLE_HEIGHT_M: 8.4,
+  /** Variation in height, metres, so the line is not laser-straight. */
+  POLE_HEIGHT_VARIATION_M: 0.6,
+  /** Quad width as a multiple of height. Only has to contain the crossarm. */
+  POLE_ASPECT: 0.34,
+
+  /** Wires strung between consecutive poles. */
+  WIRE_COUNT: 3,
+  /** Crossarm half-span, metres — how far the outer wires sit from the post. */
+  WIRE_SPAN_M: 0.62,
+  /** Height of the crossarm as a fraction of the pole. */
+  WIRE_HEIGHT: 0.86,
+  /** How far a wire sags at mid-span, metres. Higher = older, more forgotten. */
+  WIRE_SAG_M: 0.85,
+  /** Segments per span. Enough that the catenary is a curve, not a vee. */
+  WIRE_SEGMENTS: 7,
+} as const;
+
+/**
  * Roadside vegetation — the dark shrub clusters the art target is full of.
  *
  * Billboards, per ADR-0003's 2.5D half. Everything here trades between a

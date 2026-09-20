@@ -30,7 +30,10 @@ would close the gap.
 - [x] Sky: four-stop gradient, sun disc, halo, horizon wash, clouds, stars
 - [x] Distant mountain layers with aerial perspective and real parallax
 - [x] Vegetation billboards — the dark shrub clusters the target is full of
-- [ ] Roadside furniture: guardrail, chevron signs, telegraph poles
+- [x] Telegraph poles and wires — the near-field speed cue
+- [ ] Guardrail where the ground falls away, and chevrons on tight corners.
+      Chevrons are the more interesting of the two: in a game with no HUD
+      they are how a corner announces itself before you can see through it.
 - [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
 - [ ] Double yellow centre lines rather than a single white one
 - [ ] Biome parameter sets and distance-driven blending

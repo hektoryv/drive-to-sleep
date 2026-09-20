@@ -824,3 +824,54 @@ roadside still has no *near-field* speed cue: vegetation starts 7.5 m out
 because a maintained verge is bare, so nothing sweeps past close to the car.
 Telegraph poles are the classic answer and the reason every driving game since
 1982 has had them.
+
+---
+
+## 2026-09-20 — Telegraph poles, and the road goes somewhere
+
+**Built:** telegraph poles every 40 m with three wires strung between them.
+
+The roadside had no **near-field** speed cue. Vegetation stands 7.5 m out and
+further, because a maintained verge is bare — so nothing passed close to the
+car, and something passing close is most of what makes speed *felt* rather than
+read off a dial. Every driving game since 1982 has had these, for this reason.
+
+- **Poles are billboards**, built exactly like the vegetation. A pole is a
+  cylinder and a cylinder has the same silhouette from every angle, so real
+  geometry would buy nothing.
+- **Wires are line segments with a parabolic sag** between consecutive
+  crossarms. A parabola is a close enough catenary at a 40 m span, and it is
+  the sag that says "old road", not the exact curve.
+- **The line stays on one side for the whole drive**, picked from the seed.
+  A line that hopped the road would read as a glitch rather than as a detail.
+- Poles are keyed on the absolute station index (`index % 10 === 0`), so a pole
+  stays exactly where it was put however many times the window scrolls over it.
+
+**Learned / noted:**
+
+- **Thin vertical things need a minimum screen width.** A pole is ~0.18 m
+  across. At 150 m that is a fraction of a pixel, and a silhouette cut with
+  `discard` either vanishes or flickers as the sample point crosses it — the
+  reason distant power lines shimmer in most games. The fix was already in the
+  codebase: `fwidth` gives the uv covered by one pixel, which is how the road
+  markings stay one pixel wide into the distance, so the post is simply never
+  drawn narrower than that. Distant poles come out slightly too wide instead of
+  disappearing, which is much the better error.
+
+**Cost**, measured on the software rasteriser — absolute numbers mean nothing,
+the differences do:
+
+| Scene | p50 frame |
+|---|---|
+| Neither drawn | 172.4 ms |
+| Vegetation only | 178.9 ms |
+| Vegetation and roadside | 180.9 ms |
+
+So vegetation is about 3.8% of frame time and the whole roadside about 1.2%,
+against a baseline dominated by the full-screen sky shader — which a software
+rasteriser punishes far harder than a phone will. Two extra draw calls, no
+per-frame CPU work in either. Real numbers are a device question (Phase 6).
+
+**Next:** guardrail and chevron signs. Chevrons are the more interesting: with
+no HUD, a chevron is how a corner announces itself before you can see through
+it — information the player needs, delivered as scenery rather than as UI.
