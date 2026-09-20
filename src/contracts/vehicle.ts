@@ -8,11 +8,11 @@
 import type { Surface } from './world.js';
 
 /**
- * Physical bumper-to-bumper length of the placeholder player car, metres.
+ * Intended physical bumper-to-bumper length of the player car, metres.
  *
- * This lives in the contract because the cockpit asset and any future body or
- * collision representation must agree on one real-world size without either
- * domain importing the other's tuning.
+ * The cockpit is now screen-space art, but future body, traffic and collision
+ * representations still need one shared real-world size without importing
+ * another domain's tuning.
  */
 export const PLAYER_CAR_LENGTH_M = 4.291;
 

@@ -23,20 +23,20 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
 ## Next — Phase 4: The cockpit *(in progress)*
 
-The render architecture is in (ADR-0017). A metrically normalised, licensed
-noncommercial 930 model now replaces the procedural mock-up while the final
-car asset is found or commissioned.
+The full-car GLB failed on-device: fragmented scanned materials, incorrect
+occlusion and a style that fought the world. ADR-0018 replaces it with a
+brand-free layered sprite cockpit built directly for the portrait frame.
 
-- [x] Imported cabin and body, uniformly normalised to the real 4.291 m length
-- [x] Source steering-wheel mesh separated, re-pivoted and driven by steering
-- [x] Textured five-dial cluster. The source needles are baked/static;
+- [x] Separate exterior, interior, lighting and steering-wheel atlas layers
+- [x] Screen-stable 2.5D composition with restrained look-ahead parallax
+- [x] Independent wheel sprite driven by interpolated steering
+- [x] Painted five-dial cluster. The atlas needles are currently static;
       `CarView` still carries `rpm`, `maxRpm` and `speedMs` for the future
       authored or overlaid live needles.
 - [x] The `daylight` contract — the cabin is lit by the same sun as the road
-- [x] Texture-preserving cabin fill, rising modestly with
-      `daylight.instrumentGlow`
-- [ ] Replace or remodel the static gauge needles so tach and speed are live
-- [ ] Reintroduce a correctly placed rear-view mirror and finish materials
+- [x] Painted warm/cool shadow layer rising with `daylight.instrumentGlow`
+- [x] Painted rear-view mirror placeholder
+- [ ] Add separate tach and speed needles so the gauges are live again
 
 ## Later — Phase 3: The view *(paused)*
 
@@ -94,9 +94,9 @@ each phase opens rather than duplicated here.
 
 Things to resolve before the phase that needs them:
 
-- **Rear-view mirror** (Phase 4): the imported mirror is hidden because its
-  placement does not survive the portrait cockpit crop. For its replacement,
-  use true render-to-texture or a faked gradient
+- **Rear-view mirror** (Phase 4): the atlas has a correctly placed painted
+  placeholder. For its eventual moving reflection, use render-to-texture or a
+  faked gradient
   with moving road lines? RTT costs a second scene pass; the fake may be
   indistinguishable in a mirror that's ~80 px tall. Decide by trying the fake
   first.

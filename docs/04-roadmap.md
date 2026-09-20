@@ -138,15 +138,15 @@ popping.
 **Goal:** you're sitting in the car.
 
 - [x] The second render pass the cabin needs to exist at all (ADR-0017)
-- [x] Metrically normalised placeholder 930 cabin and body
-- [x] Imported steering wheel re-pivoted and rotating with the finger
-- [x] Textured five-dial binnacle from the source model
-- [ ] Live needles: the imported needles are baked/static; the sim data exists
-- [x] Cabin texture fill rising modestly with falling ambient light
+- [x] Layered exterior/interior/lighting sprite atlas (ADR-0018)
+- [x] Separate steering-wheel sprite rotating with the finger
+- [x] Painted five-dial binnacle in the interior layer
+- [ ] Live needles: the atlas needles are static; the sim data exists
+- [x] Painted cabin shadows rising modestly with falling ambient light
 - [ ] Glass specular streak across the dial covers
-- [ ] Rear-view mirror
+- [x] Painted rear-view mirror placeholder
 - [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon
-- [ ] Material finishes: matte vinyl / semi-gloss leather / brushed aluminium
+- [x] Faceted matte finishes authored into the sprite atlas
 
 **Exit:** a night screenshot where the dials are the only light source and the
 cabin is unmistakably a 70s sports car. That single image is the test.

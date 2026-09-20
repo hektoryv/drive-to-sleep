@@ -1,11 +1,13 @@
-# Placeholder Porsche 930 model
+# Cockpit sprite atlas
 
-`porsche-930-placeholder.glb` is used only as a development placeholder.
+`cockpit-sprite-atlas.png` was generated for this project from the owner's
+supplied cockpit sprite-sheet reference using OpenAI's built-in image generator
+on 2026-09-21. It contains four transparent quadrants:
 
-- Title: **1982 Porsche 930 911 Turbo 3.3**
-- Author: **Ddiaz Design** — <https://sketchfab.com/ddiaz-design>
-- Source: <https://sketchfab.com/3d-models/1982-porsche-930-911-turbo-33-4cbde48bef674e15b50a891f0fea04c5>
-- Licence: **CC BY-NC-SA 4.0** — <https://creativecommons.org/licenses/by-nc-sa/4.0/>
+1. exterior frame, hood and mirrors;
+2. dashboard and doors without a steering wheel;
+3. warm/cool lighting overlay;
+4. isolated steering wheel.
 
-The licence and source metadata are also embedded in the GLB. This asset must
-be replaced before any commercial release.
+The atlas deliberately contains no marque, crest, model number or readable
+branding. Runtime code in `cockpit/sprites.ts` samples the quadrants separately.

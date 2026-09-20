@@ -46,7 +46,7 @@ horizon, so the framing is designed rather than inherited:
 ```
 
 Live values are in `VIEW` in `src/render/tuning.ts`. Phase 4 finalises them
-against the real cockpit geometry.
+against the layered cockpit art.
 
 Key decisions that make this work:
 
@@ -72,9 +72,10 @@ Key decisions that make this work:
 - **The wheel's bottom is off-screen.** We see the top of the rim and the
   spokes. Showing the whole wheel would waste a third of the display on the
   inside of a car.
-- **The dash is never a flat overlay.** It's real geometry on the same camera,
-  so it pitches and rolls with the body. That parallax between dash and world
-  is a large part of why the lean will feel physical.
+- **The dash is layered rather than monolithic.** Exterior, interior, painted
+  lighting and wheel are sampled independently in the cockpit camera pass.
+  The camera-facing art stays crisp while a small lateral offset preserves
+  look-ahead parallax and the wheel remains free to rotate (ADR-0018).
 
 ## The car interior
 
@@ -170,8 +171,10 @@ headlight cone are Phase 7, not Phase 3.
 
 Per ADR-0003:
 
-- **Real 3D:** road surface, verges, near terrain, the car interior, traffic,
-  near props (out to ~120 m).
+- **Real 3D:** road surface, verges, near terrain, traffic and near props (out
+  to ~120 m).
+- **Layered 2.5D:** the cockpit atlas — exterior, interior, lighting and wheel
+  in the second camera pass (ADR-0018).
 - **Billboarded / impostor:** mid and far vegetation and rocks, and all distant
   mountain silhouettes (layered parallax cards at 3–4 depths).
 - **Why it works here:** the camera never leaves the road and never looks

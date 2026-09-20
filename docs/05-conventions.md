@@ -1,6 +1,6 @@
 # 05 — Conventions
 
-*Last updated: 2026-09-20*
+*Last updated: 2026-09-21*
 
 The point of this file is that a session six weeks from now can pick the
 project up without guessing.
@@ -34,7 +34,7 @@ directions at once (ADR-0011). Each domain owns its own:
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
 | `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
-| `src/cockpit/tuning.ts` | cabin geometry, instruments, colours, lighting |
+| `src/cockpit/tuning.ts` | sprite placement, wheel motion, painted lighting |
 
 Because: tuning is iterative, tuning happens in a feedback loop with you
 looking at screenshots, and a constant buried on line 214 of `vehicle.ts` is a

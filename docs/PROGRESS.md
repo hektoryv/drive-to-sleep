@@ -7,6 +7,42 @@ Each entry: what was built, what was learned, what surprised us, what's next.
 
 ---
 
+## 2026-09-21 — The device rejected the GLB; the cockpit becomes layered art
+
+The metrically corrected 930 model was still the wrong answer. On-device it
+rendered with broken-looking material islands and occlusion, and even where it
+was technically correct its scanned detail was much uglier than the deliberately
+faceted world. The user's verdict was unambiguous, so the full GLB, its loader
+and its model-scale test are gone again.
+
+The replacement is a **four-quadrant transparent sprite atlas**, generated for
+the project from the owner's supplied cockpit sheet: exterior frame/hood,
+dashboard/doors, a warm-and-violet lighting overlay, and a genuinely separate
+three-spoke wheel. A fifth solid lower-cabin backing closes the wheel-column
+cutout without exposing the road. The atlas contains no badge, marque, model
+number or readable branding.
+
+The layers remain in ADR-0017's second WebGL pass, so world scissoring is
+unchanged. They face the cockpit camera instead of pretending to be physical
+geometry; look-ahead becomes a small lateral parallax shift, which preserves
+the sense of looking into a bend without skewing the painted A-pillars. The
+wheel rotates independently from interpolated steering. Daylight supplies a
+restrained shared tint, while the authored lighting layer grows through dusk.
+
+The result is five draw calls and ten triangles, with a 774 KB source PNG
+(about 6 MB uncompressed on the GPU), replacing a 3.7 MB GLB with dozens of
+draw calls and materials. The road and simulation remain in metres and m/s;
+the player's intended 4.291 m physical length stays in the vehicle contract
+for future chase-body, traffic and collision work. A screen-space cockpit does
+not redefine world scale.
+
+The portrait render was checked live at 430×932: the windscreen again owns the
+upper 61%, the road is readable, the wheel runs off the bottom edge, steering
+visibly rotates it, and the browser console is clean. The painted gauge needles
+are static; live tach/speed overlays remain Phase 4 work. Lint, all 210 tests,
+the production build and the Capacitor Android sync pass; the shipped cockpit
+asset falls from 3.7 MB to 774 KB.
+
 ## 2026-09-21 — A real-scale 930 replaces the procedural cabin
 
 The hand-built cockpit pass has been removed. In its place is the supplied

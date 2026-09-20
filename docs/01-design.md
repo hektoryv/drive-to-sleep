@@ -160,9 +160,10 @@ ahead, so you look through a corner rather than at the outside of it
 view fully into the corner would pin the road to the centre of the frame and
 the corner would stop reading as a corner.
 
-The yaw belongs to the driver's head, not the car. From Phase 4 the cockpit
-stays with the car, so turning into a bend swings the A-pillars and the dash
-across the view — the same thing your eyes do through a real windscreen.
+The yaw belongs to the driver's head, not the car. From Phase 4 the layered
+cockpit shifts opposite the look-ahead direction, so turning into a bend moves
+the A-pillars and dash across the view without skewing the painted sprites
+(ADR-0018).
 
 ### Off-road
 
