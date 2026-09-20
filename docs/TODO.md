@@ -28,9 +28,6 @@ would close the gap.
 - [x] Time-of-day cycle driving sun position and every palette
 - [x] Sky: four-stop gradient, sun disc, halo, horizon wash, clouds, stars
 - [x] Distant mountain layers with aerial perspective and real parallax
-- [ ] **Biome palettes.** The terrain is hardcoded olive green and clashes with
-      every warm sky. It should read the daylight palette like everything else,
-      and be ochre in the desert.
 - [ ] Vegetation billboards — the dark shrub clusters the target is full of
 - [ ] Roadside furniture: guardrail, chevron signs, telegraph poles
 - [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
@@ -42,6 +39,12 @@ would close the gap.
 - [ ] Quality tiers
 
 ## Later
+
+- [ ] **Terrain / biome palettes.** The terrain is hardcoded olive green and
+      clashes with every warm sky. Deferred on the owner's call (2026-09-20):
+      colour grading is an end-production job, not something to chase while the
+      structure is still being built. Everything it needs already exists — it
+      reads `world/gen/daylight.ts` like the sky and ridges do.
 
 
 Phases 2–7, listed in the [roadmap](04-roadmap.md). Pulled into **Next** as
