@@ -115,6 +115,28 @@ export const ROADSIDE = {
   WIRE_SAG_M: 0.85,
   /** Segments per span. Enough that the catenary is a curve, not a vee. */
   WIRE_SEGMENTS: 7,
+
+  // --- chevron signs ---
+  //
+  // The only piece of information the game gives the player in advance, and it
+  // is given as scenery rather than as interface. There is no HUD to warn you
+  // a corner is tight (docs/01-design.md §6), so the corner has to say so
+  // itself — which is exactly what chevrons are for on a real road.
+
+  /**
+   * Curvature, 1/metres, above which a corner gets chevrons. 1/150 is a 150 m
+   * radius. Lower threshold = signs on gentler bends, and the warning stops
+   * meaning anything.
+   */
+  CHEVRON_MIN_CURVATURE: 1 / 150,
+  /** Stations between signs through a marked corner. 4 is one every 16 m. */
+  CHEVRON_EVERY_STATIONS: 4,
+  /** Distance from the centreline, metres. Outside the verge, inside the poles. */
+  CHEVRON_OFFSET_M: 6.9,
+  /** Plate size and the height of its bottom edge above the ground, metres. */
+  CHEVRON_WIDTH_M: 0.95,
+  CHEVRON_PLATE_M: 0.78,
+  CHEVRON_POST_M: 0.95,
 } as const;
 
 /**

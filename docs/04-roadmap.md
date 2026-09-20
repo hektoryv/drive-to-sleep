@@ -116,8 +116,8 @@ says nothing about how it feels getting there.
 - [ ] Height fog on top of the distance fog
 - [x] Telegraph poles and wires — the near-field speed cue. Something has to
       pass *close* to the car, and a maintained verge is bare of everything else.
-- [ ] The rest of the roadside furniture: guardrail on the drops, chevron
-      signs on the tight corners
+- [x] Chevron signs on corners tighter than a 150 m radius
+- [ ] Guardrail where the ground falls away
 - [ ] The near-3D cross-fade band, for props close enough that flatness shows
 - [ ] Biome parameter sets and distance-driven blending
 - [ ] Prop tables per biome, weighted by blend

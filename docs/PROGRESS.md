@@ -875,3 +875,50 @@ per-frame CPU work in either. Real numbers are a device question (Phase 6).
 **Next:** guardrail and chevron signs. Chevrons are the more interesting: with
 no HUD, a chevron is how a corner announces itself before you can see through
 it — information the player needs, delivered as scenery rather than as UI.
+
+---
+
+## 2026-09-20 — Chevron signs, and a convention worth testing
+
+**Built:** chevron signs on corners tighter than a 150 m radius.
+
+These are the only advance warning the game gives the player, and they are
+given as **scenery rather than as interface**. There is no HUD to tell you a
+corner is tight (`01-design.md` §6), so the corner has to say so itself —
+which is exactly what chevrons do on a real road. A sign on every bend would be
+a sign on no bend, so the threshold matters more than the drawing does.
+
+- Real oriented quads, not billboards. A sign that turned to follow the camera
+  would still be readable from behind, which is the one thing a sign must not
+  be. The plate faces back down the road at the driver coming into the corner.
+- The plate, the chevrons, the dark border and the post are all one quad, drawn
+  analytically in the fragment shader — no texture, and the post gets the same
+  minimum-pixel-width guard the telegraph poles need.
+
+**Learned / noted:**
+
+- **The arrow direction was inverted, and it took a text dump to see it.** The
+  `k` term that bends each band into an arrow had the wrong sign, so every sign
+  pointed *out* of its corner rather than into it — worse than no sign at all,
+  because it actively misleads. At the size a chevron plate occupies on screen,
+  roughly twenty pixels, squinting at the screenshot could not settle it: the
+  glyphs read as "«" or "»" depending on what you expected to see. Printing the
+  shader's pattern function as ASCII, for both signs of the term, settled it in
+  one go. **When a visual check is ambiguous, render the function as text.**
+  This is the same lesson as the normals bug in Phase 1, arriving by a
+  different road: diagnose from numbers, not from the picture.
+- **The placement rule moved to `world/gen/signage.ts`.** Which side of the
+  road a sign stands on and which way it points are facts about the road, not
+  about how it is drawn, and they are facts that can be inverted silently —
+  which had just happened. They are pure functions now, with
+  `tests/signage.test.ts` pinning the convention down: the sign goes on the
+  outside of the bend, the arrows point into it, and `side` is always the
+  negation of `turn`. 206 tests.
+
+**Seen:** `--seed 3 --at 1770` and `--seed 1 --at 520` are both approaches to
+sub-60 m-radius corners, and the signs read correctly at both.
+
+**Next:** guardrail where the ground falls away. After that Phase 3's remaining
+items are all colour and post — grading, bloom, vignette, grain, height fog,
+the moon — which is the end-production work the terrain palette was already
+deferred into, so Phase 4 (the cockpit) is probably the better next phase.
