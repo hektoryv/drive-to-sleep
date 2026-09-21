@@ -166,11 +166,12 @@ across the view — the same thing your eyes do through a real windscreen.
 
 ### Off-road
 
-Leaving the tarmac is a soft penalty, not a failure: grip drops, drag rises,
-speed bleeds off, the heave spring gets a rumble input, and a dust/grass
-particle wash kicks up. Steering back on is always possible. There is no
-barrier and no invisible wall — but terrain steepens away from the road, so
-going far off-road slows you to a crawl and gently insists you come back.
+Leaving the tarmac is a soft penalty rather than a fail state: grip drops,
+drag rises, speed bleeds off, the heave spring gets a rumble input, and a
+dust/grass particle wash will kick up. During environment development an
+invisible safety wall follows the road 2 m beyond each tarmac edge, preventing
+the car from falling through scenery that does not yet have a recovery flow.
+It removes only outward velocity, so a scrape preserves motion along the road.
 
 ## 4. Traffic
 

@@ -26,6 +26,12 @@ export const SIM = {
   MAX_SUB_STEPS: 8,
 } as const;
 
+/** Temporary roadside containment while departures have no recovery flow. */
+export const ROAD_BOUNDARY = {
+  /** Invisible wall distance beyond the current tarmac edge, metres. */
+  OUTSIDE_EDGE_M: 2,
+} as const;
+
 // ---------------------------------------------------------------------------
 // The car — docs/01-design.md §3. Wired up in Phase 2.
 // ---------------------------------------------------------------------------

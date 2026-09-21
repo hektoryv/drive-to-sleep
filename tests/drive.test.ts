@@ -11,7 +11,7 @@ import { createRoad } from '../src/world/gen/road-query.js';
 import { createAutopilot } from '../src/sim/autopilot.js';
 import { createDriveState, placeOnRoad, stepDrive, type DriveState } from '../src/sim/drive.js';
 import type { VehicleInput } from '../src/sim/vehicle.js';
-import { CAR, GRAVITY } from '../src/sim/tuning.js';
+import { CAR, GRAVITY, ROAD_BOUNDARY } from '../src/sim/tuning.js';
 
 const DT = 1 / 120;
 
@@ -137,7 +137,7 @@ describe('driving the generated road', () => {
 });
 
 describe('leaving the road', () => {
-  it('slows the car down rather than stopping it dead', () => {
+  it('allows the verge but never crosses the roadside wall', () => {
     const road = createRoad(1);
     const drive = createDriveState();
     placeOnRoad(drive, road, 400);
@@ -145,34 +145,38 @@ describe('leaving the road', () => {
     // Full lock until the car is off the tarmac, then hold the throttle open.
     const off: VehicleInput = { steer: 1, throttle: 1, brake: 0 };
     let leftTheRoad = false;
+    let maxOutsideEdgeM = 0;
     for (let i = 0; i < 120 * 12; i++) {
       stepDrive(drive, road, off, 1, DT);
       if (drive.surface !== 'tarmac') leftTheRoad = true;
+      maxOutsideEdgeM = Math.max(
+        maxOutsideEdgeM,
+        Math.abs(drive.roadPos.t) - drive.sample.halfWidth,
+      );
     }
 
     expect(leftTheRoad).toBe(true);
-    // Still moving — off-road is a penalty surface, not a wall (docs/01-design).
-    expect(drive.vehicle.speedMs).toBeGreaterThan(1);
+    expect(maxOutsideEdgeM).toBeLessThanOrEqual(ROAD_BOUNDARY.OUTSIDE_EDGE_M + 0.001);
   });
 
-  it('is always recoverable — there is no barrier and no fail state', () => {
+  it('projects an existing departure back inside the wall in one step', () => {
     const road = createRoad(1);
     const drive = createDriveState();
     placeOnRoad(drive, road, 400);
 
-    for (let i = 0; i < 120 * 4; i++) {
-      stepDrive(drive, road, { steer: 1, throttle: 0.6, brake: 0 }, 1, DT);
-    }
-    const strayed = Math.abs(drive.roadPos.t);
-    expect(strayed).toBeGreaterThan(2);
+    const rightX = Math.cos(drive.sample.heading);
+    const rightZ = -Math.sin(drive.sample.heading);
+    drive.vehicle.x += rightX * 20;
+    drive.vehicle.z += rightZ * 20;
 
-    // Steer back and the car simply comes back. Nothing resets, nothing ends.
-    const back = Math.sign(drive.roadPos.t) > 0 ? -0.5 : 0.5;
-    for (let i = 0; i < 120 * 8; i++) {
-      stepDrive(drive, road, { steer: back, throttle: 0.5, brake: 0 }, 1, DT);
-    }
-    expect(Number.isFinite(drive.roadPos.t)).toBe(true);
-    expect(drive.vehicle.speedMs).toBeGreaterThan(0);
+    stepDrive(drive, road, { steer: 0, throttle: 0, brake: 0 }, 1, DT);
+
+    expect(Math.abs(drive.roadPos.t)).toBeCloseTo(
+      drive.sample.halfWidth + ROAD_BOUNDARY.OUTSIDE_EDGE_M,
+      5,
+    );
+    expect(Number.isFinite(drive.vehicle.x)).toBe(true);
+    expect(Number.isFinite(drive.vehicle.z)).toBe(true);
   });
 });
 
