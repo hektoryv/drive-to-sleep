@@ -42,6 +42,10 @@ const SKY_FRAG = /* glsl */ `
   uniform vec3 uCloudLit;
   uniform vec3 uCloudShadow;
   uniform vec3 uSunDir;
+  uniform vec3 uMoonDir;
+  uniform vec3 uMoonDisc;
+  uniform vec3 uMoonHalo;
+  uniform float uMoonStrength;
   uniform float uCloudCover;
   uniform float uStars;
   uniform float uDrift;
@@ -117,6 +121,7 @@ const SKY_FRAG = /* glsl */ `
     if (h < 0.0) col = mix(uHorizon, col, exp(h * 14.0));
 
     float sunDot = dot(dir, uSunDir);
+    float moonDot = dot(dir, uMoonDir);
 
     // Halo first, so the disc sits inside its own glow.
     float halo = pow(max(sunDot, 0.0), 220.0) * 0.55 + pow(max(sunDot, 0.0), 14.0) * 0.30;
@@ -128,6 +133,12 @@ const SKY_FRAG = /* glsl */ `
                               normalize(vec3(uSunDir.x, 0.0, uSunDir.z))), 0.0);
     float horizonGlow = pow(towardSun, 3.0) * exp(-abs(h) * 7.0) * 0.35;
     col += uSunHalo * horizonGlow;
+
+    // The moon is a restrained opposite-sun disc, not a second daytime sun.
+    // It appears only with the stars and supplies the world's cool night key.
+    float moonHalo = pow(max(moonDot, 0.0), 90.0) * 0.22;
+    float moonDisc = smoothstep(0.99972, 0.99986, moonDot);
+    col += (uMoonHalo * moonHalo + uMoonDisc * moonDisc) * uMoonStrength;
 
     // Stars, before the clouds so the clouds occlude them.
     if (uStars > 0.001 && h > -0.02) {
@@ -145,10 +156,10 @@ const SKY_FRAG = /* glsl */ `
     if (elevation > -0.03) {
       // High deck: fine, fast, catches the light first.
       vec4 high = cloudLayer(azimuth, elevation, 1.35, 4.2, uDrift * 0.6,
-                             uCloudCover * 0.85, 0.055);
+                             uCloudCover * 0.85, ${SKY.CLOUD_HIGH_SOFTNESS.toFixed(3)});
       // Low deck: broad slabs sitting on the horizon.
       vec4 low = cloudLayer(azimuth + 2.4, elevation, 0.75, 7.5, uDrift,
-                            uCloudCover, 0.04);
+                            uCloudCover, ${SKY.CLOUD_LOW_SOFTNESS.toFixed(3)});
 
       // Both fade out near the horizon, where a cloud would be too far away
       // to resolve, and thin toward the zenith.
@@ -194,6 +205,10 @@ export function createSky(shared: WorldUniforms): Sky {
     uCloudLit: uniformColor(),
     uCloudShadow: uniformColor(),
     uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+    uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+    uMoonDisc: { value: new THREE.Color(SKY.MOON_DISC_COLOR) },
+    uMoonHalo: { value: new THREE.Color(SKY.MOON_HALO_COLOR) },
+    uMoonStrength: { value: 0 },
     uCloudCover: { value: 0.4 },
     uStars: { value: 0 },
     uDrift: { value: 0 },
@@ -231,8 +246,10 @@ export function createSky(shared: WorldUniforms): Sky {
       setSrgb(u.uCloudLit.value, palette.cloudLit);
       setSrgb(u.uCloudShadow.value, palette.cloudShadow);
       u.uSunDir.value.set(sunX, sunY, sunZ);
+      u.uMoonDir.value.set(-sunX, Math.max(-sunY, 0.04), -sunZ).normalize();
       u.uCloudCover.value = palette.cloudCover;
       u.uStars.value = palette.starIntensity;
+      u.uMoonStrength.value = palette.starIntensity;
 
       // The fog colour is the sky's horizon colour, from this one place.
       // Anything else puts a visible seam at the skyline.
@@ -244,6 +261,8 @@ export function createSky(shared: WorldUniforms): Sky {
       // just above the horizon: once the sun sets the terrain should go to
       // ambient, not light itself from below.
       shared.uSunDir.value.set(sunX, Math.max(sunY, 0.04), sunZ).normalize();
+      shared.uMoonDir.value.copy(u.uMoonDir.value);
+      shared.uMoonStrength.value = palette.starIntensity * SKY.MOON_LIGHT_STRENGTH;
     },
 
     step(dt) {

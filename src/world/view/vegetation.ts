@@ -28,8 +28,13 @@
 
 import * as THREE from 'three';
 import { fbm1, hash2D01 } from '../../core/rng.js';
-import { VEGETATION } from '../tuning.js';
+import { BIOMES, VEGETATION } from '../tuning.js';
 import { terrainHeightAt } from '../gen/terrain.js';
+import {
+  biomeWeightsAt,
+  dominantBiome,
+  makeBiomeWeights,
+} from '../gen/biomes.js';
 import type { Stations } from '../gen/stations.js';
 import { WORLD_COMMON_GLSL, type WorldUniforms } from './materials.js';
 
@@ -37,15 +42,21 @@ const VERT = /* glsl */ `
   attribute vec2 corner;
   attribute vec2 size;
   attribute float variant;
+  attribute float kind;
+  attribute vec3 biome;
 
   varying vec2 vUv;
   varying float vVariant;
+  varying float vKind;
+  varying vec3 vBiome;
   varying vec3 vWorld;
   varying vec3 vNormal;
 
   void main() {
     vUv = corner + vec2(0.5, 0.0);
     vVariant = variant;
+    vKind = kind;
+    vBiome = biome;
 
     vec4 world = modelMatrix * vec4(position, 1.0);
     vWorld = world.xyz;
@@ -73,10 +84,16 @@ const VERT = /* glsl */ `
 `;
 
 const FRAG = /* glsl */ `
-  uniform vec3 uBase;
-  uniform vec3 uTip;
+  uniform vec3 uBaseMountain;
+  uniform vec3 uBaseDesert;
+  uniform vec3 uBaseCountry;
+  uniform vec3 uTipMountain;
+  uniform vec3 uTipDesert;
+  uniform vec3 uTipCountry;
   varying vec2 vUv;
   varying float vVariant;
+  varying float vKind;
+  varying vec3 vBiome;
   ${WORLD_COMMON_GLSL}
 
   /**
@@ -106,12 +123,22 @@ const FRAG = /* glsl */ `
     return w - abs(q.x);
   }
 
+  /** Sparse desert cactus: trunk plus two raised arms. */
+  float cactus(vec2 p, float v) {
+    float trunk = 0.09 - abs(p.x);
+    float leftArm = min(0.055 - abs(p.x + 0.17), 0.38 - abs(p.y - 0.42));
+    float rightArm = min(0.05 - abs(p.x - 0.16), 0.28 - abs(p.y - 0.54));
+    float leftJoin = min(0.22 - abs(p.x + 0.08), 0.05 - abs(p.y - 0.31));
+    float rightJoin = min(0.2 - abs(p.x - 0.08), 0.05 - abs(p.y - 0.43));
+    return max(max(trunk, leftArm), max(rightArm, max(leftJoin, rightJoin))) + v * 0.005;
+  }
+
   void main() {
     vec2 p = vec2(vUv.x - 0.5, vUv.y);
     float v = fract(vVariant);
-    float d = v < ${VEGETATION.SPIRE_FRACTION.toFixed(3)}
-      ? spire(p, fract(v * 37.0))
-      : mound(p, fract(v * 17.0));
+    float d = vKind > 1.5
+      ? cactus(p, fract(v * 29.0))
+      : (vKind > 0.5 ? spire(p, fract(v * 37.0)) : mound(p, fract(v * 17.0)));
 
     // Hard cut. Blending would need these sorted back to front, and there are
     // thousands of them.
@@ -119,7 +146,9 @@ const FRAG = /* glsl */ `
 
     // Darker at the base, where a real plant is in its own shadow, and a
     // touch lighter at the tips. Most of the colour is the lighting.
-    vec3 albedo = mix(uBase, uTip, smoothstep(0.0, 0.85, vUv.y));
+    vec3 base = uBaseMountain * vBiome.x + uBaseDesert * vBiome.y + uBaseCountry * vBiome.z;
+    vec3 tip = uTipMountain * vBiome.x + uTipDesert * vBiome.y + uTipCountry * vBiome.z;
+    vec3 albedo = mix(base, tip, smoothstep(0.0, 0.85, vUv.y));
     // Per-plant tint, so a thicket is not one flat colour.
     albedo *= 0.82 + 0.3 * fract(v * 53.0);
 
@@ -151,6 +180,8 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
   const corners = new Float32Array(vertexCount * 2);
   const sizes = new Float32Array(vertexCount * 2);
   const variants = new Float32Array(vertexCount);
+  const kinds = new Float32Array(vertexCount);
+  const biomes = new Float32Array(vertexCount * 3);
   const indices = new Uint32Array(maxPlants * 6);
 
   // Corners and indices never change — only which plants are live, and where.
@@ -174,13 +205,19 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
   const positionAttr = new THREE.BufferAttribute(positions, 3);
   const sizeAttr = new THREE.BufferAttribute(sizes, 2);
   const variantAttr = new THREE.BufferAttribute(variants, 1);
+  const kindAttr = new THREE.BufferAttribute(kinds, 1);
+  const biomeAttr = new THREE.BufferAttribute(biomes, 3);
   positionAttr.setUsage(THREE.DynamicDrawUsage);
   sizeAttr.setUsage(THREE.DynamicDrawUsage);
   variantAttr.setUsage(THREE.DynamicDrawUsage);
+  kindAttr.setUsage(THREE.DynamicDrawUsage);
+  biomeAttr.setUsage(THREE.DynamicDrawUsage);
   geometry.setAttribute('position', positionAttr);
   geometry.setAttribute('corner', new THREE.BufferAttribute(corners, 2));
   geometry.setAttribute('size', sizeAttr);
   geometry.setAttribute('variant', variantAttr);
+  geometry.setAttribute('kind', kindAttr);
+  geometry.setAttribute('biome', biomeAttr);
   geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
   const material = new THREE.ShaderMaterial({
@@ -188,8 +225,12 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
     fragmentShader: FRAG,
     uniforms: {
       ...shared,
-      uBase: { value: new THREE.Color(0x2f3a2a) },
-      uTip: { value: new THREE.Color(0x5c6640) },
+      uBaseMountain: { value: new THREE.Color(BIOMES.PLANT_BASE[0]) },
+      uBaseDesert: { value: new THREE.Color(BIOMES.PLANT_BASE[1]) },
+      uBaseCountry: { value: new THREE.Color(BIOMES.PLANT_BASE[2]) },
+      uTipMountain: { value: new THREE.Color(BIOMES.PLANT_TIP[0]) },
+      uTipDesert: { value: new THREE.Color(BIOMES.PLANT_TIP[1]) },
+      uTipCountry: { value: new THREE.Color(BIOMES.PLANT_TIP[2]) },
     },
     // The silhouette is cut with discard, so this is an opaque surface that
     // happens to have holes in it. Depth writes, no sorting, no transparency.
@@ -197,6 +238,7 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
   });
 
   const mesh = new THREE.Mesh(geometry, material);
+  const biome = makeBiomeWeights();
   mesh.frustumCulled = false;
   // After the terrain, so the ground is already in the depth buffer and most
   // of the discarded fragments never shade.
@@ -246,7 +288,12 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
       const rz = -Math.sin(heading);
 
       const s0 = index * stations.spacing;
-      const cover = coverAt(s0, stations.seed);
+      biomeWeightsAt(s0, stations.seed, biome);
+      const biomeCover =
+        biome.mountain * BIOMES.PLANT_COVER[0] +
+        biome.desert * BIOMES.PLANT_COVER[1] +
+        biome.country * BIOMES.PLANT_COVER[2];
+      const cover = Math.min(1, coverAt(s0, stations.seed) * biomeCover);
 
       for (let k = 0; k < VEGETATION.PER_STATION; k++) {
         if (plant >= maxPlants) break;
@@ -275,9 +322,24 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
             (VEGETATION.FAR_M - VEGETATION.NEAR_M) * Math.pow(spread, VEGETATION.LATERAL_BIAS));
 
         const grow = hash2D01(index, k + 131, stations.seed + 523);
+        const heightScale =
+          biome.mountain * BIOMES.PLANT_HEIGHT[0] +
+          biome.desert * BIOMES.PLANT_HEIGHT[1] +
+          biome.country * BIOMES.PLANT_HEIGHT[2];
         const height =
-          VEGETATION.MIN_HEIGHT_M + (VEGETATION.MAX_HEIGHT_M - VEGETATION.MIN_HEIGHT_M) * grow;
+          (VEGETATION.MIN_HEIGHT_M + (VEGETATION.MAX_HEIGHT_M - VEGETATION.MIN_HEIGHT_M) * grow) *
+          heightScale;
         const variant = hash2D01(index, k + 173, stations.seed + 631);
+        const selectedBiome = dominantBiome(
+          biome,
+          hash2D01(index, k + 191, stations.seed + 691),
+        );
+        const kindRoll = hash2D01(index, k + 211, stations.seed + 743);
+        const kind = selectedBiome === 0
+          ? (kindRoll < BIOMES.MOUNTAIN_SPIRE_CHANCE ? 1 : 0)
+          : selectedBiome === 1
+            ? (kindRoll < BIOMES.DESERT_CACTUS_CHANCE ? 2 : 0)
+            : (kindRoll < BIOMES.COUNTRY_SPIRE_CHANCE ? 1 : 0);
 
         const groundY = terrainHeightAt(s, t, cy, stations.seed);
 
@@ -290,6 +352,10 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
           sizes[vi * 2] = height * VEGETATION.ASPECT;
           sizes[vi * 2 + 1] = height;
           variants[vi] = variant;
+          kinds[vi] = kind;
+          biomes[vi * 3] = biome.mountain;
+          biomes[vi * 3 + 1] = biome.desert;
+          biomes[vi * 3 + 2] = biome.country;
         }
         plant++;
       }
@@ -299,6 +365,8 @@ export function createVegetation(shared: WorldUniforms, capacityStations: number
     positionAttr.needsUpdate = true;
     sizeAttr.needsUpdate = true;
     variantAttr.needsUpdate = true;
+    kindAttr.needsUpdate = true;
+    biomeAttr.needsUpdate = true;
     mesh.position.set(originX, originY, originZ);
   }
 

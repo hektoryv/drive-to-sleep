@@ -15,8 +15,9 @@
  */
 
 import * as THREE from 'three';
-import { CHASE, TONEMAP_EXPOSURE, VIEW } from './tuning.js';
+import { CHASE, QUALITY, TONEMAP_EXPOSURE, VIEW, type QualityTier } from './tuning.js';
 import { clampPixelRatio, computeFraming, toGlY } from './framing.js';
+import { createPostStack } from './post.js';
 import { COCKPIT_LAYER, type Framing, type FramingOverrides, type ViewState } from '../contracts/view.js';
 
 /** Cockpit is the game. Chase exists only to look at the car — see CHASE. */
@@ -27,6 +28,7 @@ export interface Renderer {
   readonly camera: THREE.PerspectiveCamera;
   readonly framing: Framing;
   readonly info: { drawCalls: number; triangles: number; programs: number };
+  readonly quality: QualityTier;
   resize(width: number, height: number, rawPixelRatio: number): void;
   /** Replaces the framing overrides and re-derives the projection. */
   setFramingOverrides(overrides: FramingOverrides): void;
@@ -38,10 +40,11 @@ export interface Renderer {
 /** The cabin is black; the letterbox is the car, not a bar. */
 const CABIN_COLOR = 0x08080a;
 
-export function createRenderer(canvas: HTMLCanvasElement): Renderer {
+export function createRenderer(canvas: HTMLCanvasElement, quality: QualityTier = 'balanced'): Renderer {
+  const qualitySettings = QUALITY[quality];
   const gl = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: qualitySettings.antialias,
     alpha: false,
     powerPreference: 'high-performance',
     // The screenshot harness reads pixels after the frame; without this the
@@ -60,6 +63,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   gl.toneMapping = THREE.ACESFilmicToneMapping;
   gl.toneMappingExposure = TONEMAP_EXPOSURE;
   gl.outputColorSpace = THREE.SRGBColorSpace;
+  const post = createPostStack(quality);
 
   const camera = new THREE.PerspectiveCamera(50, 1, VIEW.NEAR_PLANE, VIEW.FAR_PLANE);
   camera.rotation.order = 'YXZ';
@@ -81,11 +85,12 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
 
   function resize(width: number, height: number, rawPixelRatio: number): void {
     lastSize = { width, height, rawPixelRatio };
-    const pixelRatio = clampPixelRatio(rawPixelRatio);
+    const pixelRatio = clampPixelRatio(rawPixelRatio, qualitySettings.maxPixelRatio);
     framing = computeFraming(width, height, pixelRatio, overrides);
 
     gl.setPixelRatio(pixelRatio);
     gl.setSize(width, height, false);
+    post.resize(width, height, pixelRatio);
 
     camera.fov = THREE.MathUtils.radToDeg(framing.vFov);
     camera.aspect = framing.apertureAspect;
@@ -147,10 +152,14 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     const ap = framing.aperture;
     const glY = toGlY(framing, ap);
 
+    gl.setRenderTarget(post.target);
     gl.setScissorTest(false);
     gl.clear(true, true, true);
 
     gl.setScissorTest(true);
+    // THREE converts these CSS-pixel coordinates to drawing-buffer pixels.
+    // Supplying DPR-scaled values here would scale twice and crop the right
+    // side of the scene when rendering into the post-process target.
     gl.setScissor(ap.x, glY, ap.w, ap.h);
     gl.setViewport(ap.x, glY, ap.w, ap.h);
     gl.render(scene, camera);
@@ -166,6 +175,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       gl.clearDepth();
       gl.render(scene, cockpitCamera);
     }
+    post.present(gl, framing.width, framing.height);
   }
 
   return {
@@ -181,6 +191,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         programs: gl.info.programs?.length ?? 0,
       };
     },
+    quality,
     resize,
     setCameraMode(mode: CameraMode) {
       cameraMode = mode;
@@ -191,6 +202,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     },
     render,
     dispose() {
+      post.dispose();
       gl.dispose();
     },
   };

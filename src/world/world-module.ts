@@ -13,7 +13,7 @@ import type { GameModule, ModuleContext } from '../contracts/module.js';
 import type { CarView } from '../contracts/vehicle.js';
 import type { DaylightView } from '../contracts/daylight.js';
 import type { ViewState } from '../contracts/view.js';
-import { ROAD, TIME } from './tuning.js';
+import { HEIGHT_FOG, ROAD, TIME } from './tuning.js';
 import {
   daylightAt,
   makeSkyPalette,
@@ -29,6 +29,7 @@ import { createRoadMesh, type RoadMesh } from './view/road-mesh.js';
 import { createTerrainMesh, type TerrainMesh } from './view/terrain-mesh.js';
 import { createSky, type Sky } from './view/sky.js';
 import { createVegetation, type Vegetation } from './view/vegetation.js';
+import { createNearProps, type NearProps } from './view/near-props.js';
 import { createRoadside, type Roadside } from './view/roadside.js';
 import {
   createRoadMaterial,
@@ -63,6 +64,7 @@ export function createWorldModule(): WorldModule {
   let sky: Sky | undefined;
   let ridges: Ridges | undefined;
   let vegetation: Vegetation | undefined;
+  let nearProps: NearProps | undefined;
   let roadside: Roadside | undefined;
   let roadMaterial: THREE.ShaderMaterial | undefined;
   let terrainMaterial: THREE.ShaderMaterial | undefined;
@@ -150,6 +152,7 @@ export function createWorldModule(): WorldModule {
     roadMesh.rebuild(stations, ox, oy, oz);
     terrainMesh.rebuild(stations, ox, oy, oz);
     vegetation?.rebuild(stations, ox, oy, oz);
+    nearProps?.rebuild(stations, ox, oy, oz);
     roadside?.rebuild(stations, ox, oy, oz);
 
     lastBuiltNextIndex = stations.nextIndex;
@@ -179,6 +182,7 @@ export function createWorldModule(): WorldModule {
       sky = createSky(uniforms);
       ridges = createRidges(uniforms);
       vegetation = createVegetation(uniforms, capacity);
+      nearProps = createNearProps(uniforms, capacity);
       roadside = createRoadside(uniforms, capacity);
 
       context.scene.add(
@@ -187,6 +191,7 @@ export function createWorldModule(): WorldModule {
         terrainMesh.mesh,
         roadMesh.mesh,
         vegetation.mesh,
+        nearProps.mesh,
         roadside.group,
       );
       applyDaylight();
@@ -213,6 +218,9 @@ export function createWorldModule(): WorldModule {
     frame(_alpha: number, view: Readonly<ViewState>) {
       sky?.follow(view.x, view.y, view.z);
       ridges?.update(view.x, view.y, view.z);
+      if (uniforms !== undefined) {
+        uniforms.uFogBaseY.value = view.y + HEIGHT_FOG.BASE_ABOVE_ROAD_M;
+      }
     },
 
     setTimePhase(phase: number) {
@@ -234,6 +242,7 @@ export function createWorldModule(): WorldModule {
       sky?.dispose();
       ridges?.dispose();
       vegetation?.dispose();
+      nearProps?.dispose();
       roadside?.dispose();
       roadMaterial?.dispose();
       terrainMaterial?.dispose();

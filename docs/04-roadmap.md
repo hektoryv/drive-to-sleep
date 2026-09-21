@@ -101,7 +101,7 @@ says nothing about how it feels getting there.
 
 ---
 
-## Phase 3 — The view *(in progress)*
+## Phase 3 — The view *(complete 2026-09-21)*
 
 **Goal:** it looks good.
 
@@ -112,17 +112,17 @@ says nothing about how it feels getting there.
 - [x] Distant mountain impostor layers with parallax
 - [x] Billboard vegetation — mounds and spires, silhouette drawn in the
       fragment shader, one draw call
-- [ ] The moon as a night key light
-- [ ] Height fog on top of the distance fog
+- [x] The moon as a night key light
+- [x] Height fog on top of the distance fog
 - [x] Telegraph poles and wires — the near-field speed cue. Something has to
       pass *close* to the car, and a maintained verge is bare of everything else.
 - [x] Chevron signs on corners tighter than a 150 m radius
-- [ ] Guardrail where the ground falls away
-- [ ] The near-3D cross-fade band, for props close enough that flatness shows
-- [ ] Biome parameter sets and distance-driven blending
-- [ ] Prop tables per biome, weighted by blend
-- [ ] Colour grading, and the post stack: bloom, vignette, grain
-- [ ] Quality tiers
+- [x] Guardrail where the ground falls away
+- [x] The near-3D cross-fade band, for props close enough that flatness shows
+- [x] Biome parameter sets and distance-driven blending
+- [x] Prop tables per biome, weighted by blend
+- [x] Colour grading, and the post stack: bloom, vignette, grain
+- [x] Quality tiers
 
 **Exit:** a contact sheet of ~20 screenshots across seeds, biomes and times of
 day where the great majority look like somewhere you want to be.

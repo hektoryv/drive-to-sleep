@@ -138,6 +138,21 @@ export const ROADSIDE = {
   CHEVRON_WIDTH_M: 0.95,
   CHEVRON_PLATE_M: 0.78,
   CHEVRON_POST_M: 0.95,
+
+  // --- guardrail ---
+  /** Distance beyond the tarmac edge, metres. */
+  GUARDRAIL_GAP_M: 0.72,
+  /** Sample the terrain this far outside the rail to decide whether it drops away. */
+  GUARDRAIL_DROP_SAMPLE_M: 18,
+  /** Minimum fall beyond the shoulder before protection appears, metres. */
+  GUARDRAIL_MIN_DROP_M: 1.65,
+  GUARDRAIL_HEIGHT_M: 0.82,
+  GUARDRAIL_BEAM_BOTTOM_M: 0.53,
+  /** Support spacing in stations. Two at 4 m gives an 8 m graphic rhythm. */
+  GUARDRAIL_POST_EVERY_STATIONS: 2,
+  /** Join short threshold gaps, then reject short isolated runs. */
+  GUARDRAIL_JOIN_GAP_STATIONS: 3,
+  GUARDRAIL_MIN_RUN_STATIONS: 6,
 } as const;
 
 /**
@@ -206,11 +221,71 @@ export const TERRAIN = {
   BLEND_M: 45,
 } as const;
 
+/**
+ * Faceted near-field stones. They are real geometry where a billboard's
+ * flatness would be obvious, then dither away into the authored roadside as
+ * distance makes the extra volume impossible to read.
+ */
+export const NEAR_PROPS = {
+  EVERY_STATIONS: 1,
+  CHANCE: 0.2,
+  NEAR_M: 7.2,
+  FAR_M: 22,
+  MIN_HEIGHT_M: 0.28,
+  MAX_HEIGHT_M: 1.05,
+  MIN_WIDTH_M: 0.4,
+  MAX_WIDTH_M: 1.35,
+  FADE_START_M: 58,
+  FADE_END_M: 82,
+} as const;
+
+/** Large-scale regions. A cell is mostly one biome with a long blended entry. */
+export const BIOMES = {
+  /** Average authored region length. */
+  CELL_M: 5600,
+  /** Transition length at the start of each cell. */
+  BLEND_M: 1400,
+  /** Palette order matches `BiomeWeights`: mountain, desert, country. */
+  TERRAIN_LOW: [0x5d554b, 0xa95f38, 0x59633b] as const,
+  TERRAIN_HIGH: [0x807467, 0xc9854f, 0x7c8048] as const,
+  TERRAIN_ROCK: [0x554f5e, 0x864450, 0x635b55] as const,
+  VERGE: [0x685844, 0xa9643b, 0x647044] as const,
+  SHOULDER: [0x6f5548, 0x8f523d, 0x6e5944] as const,
+  PLANT_BASE: [0x213229, 0x46372c, 0x2e3b27] as const,
+  PLANT_TIP: [0x425446, 0x776044, 0x667044] as const,
+  /** Relative plant density by biome. */
+  PLANT_COVER: [1.15, 0.42, 1.0] as const,
+  /** Relative plant height by biome. */
+  PLANT_HEIGHT: [1.32, 0.72, 1.0] as const,
+  /** Mountain pine, desert cactus and country spire chances. */
+  MOUNTAIN_SPIRE_CHANCE: 0.72,
+  DESERT_CACTUS_CHANCE: 0.38,
+  COUNTRY_SPIRE_CHANCE: 0.16,
+} as const;
+
+/** Height-aware atmospheric haze layered over the palette's distance fog. */
+export const HEIGHT_FOG = {
+  /** Fog plane relative to the road under the camera, metres. */
+  BASE_ABOVE_ROAD_M: 4,
+  /** Vertical scale of the haze. Larger lets it climb further up hills. */
+  SCALE_M: 42,
+  /** Contribution of height haze to the existing distance-fog curve. */
+  STRENGTH: 0.72,
+} as const;
+
 export const SKY = {
   /** Sky shell radius. Must exceed the furthest ridge layer. */
   RADIUS_M: 6000,
   /** How fast the cloud decks slide, in noise units per second. Very slow. */
   CLOUD_DRIFT: 0.0035,
+  /** Narrow noise thresholds give the clouds hard cut-paper edges. */
+  CLOUD_HIGH_SOFTNESS: 0.026,
+  CLOUD_LOW_SOFTNESS: 0.018,
+  /** Moon is opposite the sun and becomes the cool night key. */
+  MOON_DISC_COLOR: 0xd9e4ff,
+  MOON_HALO_COLOR: 0x7183b8,
+  MOON_LIGHT_COLOR: 0x6f83b8,
+  MOON_LIGHT_STRENGTH: 0.34,
 } as const;
 
 /**

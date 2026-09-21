@@ -20,6 +20,7 @@ import type { FramingOverrides, ViewState } from '../contracts/view.js';
 import { makeViewState } from '../contracts/view.js';
 import { SIM } from '../sim/tuning.js';
 import { createRenderer, type CameraMode, type Renderer } from '../render/renderer.js';
+import type { QualityTier } from '../render/tuning.js';
 import { createModules } from './modules.js';
 import { createModuleHost, type ModuleHost } from './registry.js';
 import { createDebugOverlay, type DebugOverlay } from './debug.js';
@@ -29,6 +30,7 @@ export interface AppOptions {
   overlayRoot: HTMLElement;
   seed?: number;
   framing?: FramingOverrides;
+  quality?: QualityTier;
 }
 
 export interface App {
@@ -76,7 +78,7 @@ export function createApp(options: AppOptions): App {
 
   const events = createEventBus<GameEventMap>();
   const services = createServiceRegistry();
-  const renderer: Renderer = createRenderer(options.canvas);
+  const renderer: Renderer = createRenderer(options.canvas, options.quality);
   const scene = new THREE.Scene();
   const view = makeViewState();
 

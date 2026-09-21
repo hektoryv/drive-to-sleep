@@ -21,30 +21,19 @@ rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 - [ ] Mix balance — `MASTER.GAIN`, then the three `GAIN_MAX`/`GAIN_LOAD`
       values against each other. Phone speaker first, then headphones.
 
-## Next — Phase 3: The view *(resumed)*
+## Next — Phase 5: Life on the road
 
-The interior art is postponed (ADR-0020). The procedural 3D cabin is the
-working placeholder, so development returns to the outside world. Ordered by
-how much each item closes the gap to `docs/reference/art-target.png`.
+Phase 3 is complete. The world now has biome drift, regional prop tables,
+guardrail, near-field geometry, height haze, a moon/night key and the final
+grade. The next phase supplies the moving stakes and the session around them.
 
-Measured against `docs/reference/art-target.png`. Ordered by how much each
-would close the gap.
-
-- [x] Time-of-day cycle driving sun position and every palette
-- [x] Sky: four-stop gradient, sun disc, halo, horizon wash, clouds, stars
-- [x] Distant mountain layers with aerial perspective and real parallax
-- [x] Vegetation billboards — the dark shrub clusters the target is full of
-- [x] Telegraph poles and wires — the near-field speed cue
-- [x] Chevron signs on tight corners — the game's only advance warning, given
-      as scenery rather than as interface
-- [ ] **Guardrail where the ground falls away** — the next implementation task
-- [ ] Harder cloud edges; mine are softer than the target's cut-paper slabs
-- [x] Solid double-yellow centre lines with white edge markings
-- [ ] Biome parameter sets and distance-driven blending
-- [ ] Height fog on top of the distance fog
-- [ ] Colour grading, bloom, vignette, animated dither grain
-- [ ] The moon as a night key light
-- [ ] Quality tiers
+- [ ] Deterministic traffic spawn/despawn from seed and distance
+- [ ] Traffic lane-following, wander and corner behaviour
+- [ ] Four or five period vehicle silhouettes
+- [ ] Capsule collision, impulse and speed scrub
+- [ ] Scoring: distance, flow and overtakes
+- [ ] HUD, start/pause panels and drive summary
+- [ ] Persistence: best distance, settings and resume point
 
 ## Parked — Phase 4: The cockpit
 
@@ -81,10 +70,6 @@ with working instruments, while final interior production is postponed.
       Needs rasterising, which needs a tool the container doesn't have.
 - [ ] **Release signing.** The `dev` APK is debug-signed. Phase 6's exit
       criterion needs a keystore in repository secrets and a release job.
-- [ ] **Terrain / biome palettes.** The olive placeholder is now warm earth,
-      matching the reference at golden hour, but it is still one static
-      palette. Per-time and per-biome terrain colour remains an end-production
-      grading job driven from `world/gen/daylight.ts`.
 
 
 Phases 2–7, listed in the [roadmap](04-roadmap.md). Pulled into **Next** as
@@ -98,10 +83,6 @@ Things to resolve before the phase that needs them:
   with moving road lines? RTT costs a second scene pass; the fake may be
   indistinguishable in a mirror that's ~80 px tall. Decide by trying the fake
   first.
-- **Prop textures** (Phase 3): procedurally generated to canvas at startup, or
-  authored atlases shipped in the bundle? Procedural keeps the repo free of
-  binaries and is easy to re-tune per biome; authored looks better. Start
-  procedural, switch if it looks cheap.
 - **Traffic silhouettes** (Phase 5): hand-written geometry, or a tiny
   parametric generator (length, roof profile, glass line)? Parametric gives
   variety for free; hand-written looks intentional.
@@ -145,6 +126,22 @@ Things to resolve before the phase that needs them:
   confirming it doesn't happen mid-drive on a real device.
 
 ## Done
+
+<details>
+<summary>Phase 3 — The view (2026-09-21)</summary>
+
+- [x] Moon disc and cool night key light
+- [x] Height-aware haze layered over distance fog
+- [x] Guardrail on sustained terrain drops, with noisy placement smoothed into runs
+- [x] Faceted near-field stones fading into the billboard distance band
+- [x] Deterministic mountain, desert and country regions with 1.4 km blends
+- [x] Biome-specific terrain, shoulder, verge and vegetation palettes/prop weights
+- [x] Harder cut-paper cloud edges
+- [x] Full-frame grade: restrained bloom, vignette, contrast, saturation and grain
+- [x] Low, balanced and high GPU quality tiers
+- [x] 20-scene review sheet across four seeds, five distances and the full day
+
+</details>
 
 <details>
 <summary>Phase 2 — The drive (2026-09-18, pending device sign-off)</summary>

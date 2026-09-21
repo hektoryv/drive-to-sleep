@@ -5,6 +5,7 @@
 import { createApp } from './app/app.js';
 import { installTestApi } from './app/test-api.js';
 import type { FramingOverrides } from './contracts/view.js';
+import { qualityTier } from './render/tuning.js';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement | null;
 const overlay = document.getElementById('overlay');
@@ -60,6 +61,7 @@ const app = createApp({
   overlayRoot: overlay,
   seed,
   framing: framingFromParams(),
+  quality: qualityTier(params.get('quality')),
 });
 app.setDebugVisible(debugVisible);
 

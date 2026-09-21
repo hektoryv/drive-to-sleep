@@ -118,3 +118,30 @@ export const CHASE = {
 
 /** Filmic tonemapping exposure. See ADR-0007. */
 export const TONEMAP_EXPOSURE = 1.15;
+
+export type QualityTier = 'low' | 'balanced' | 'high';
+
+/** GPU tiers are deliberately about fill-rate, the dominant phone cost. */
+export const QUALITY = {
+  low: { maxPixelRatio: 1, antialias: false, bloom: 0, grain: 0.0025 },
+  balanced: { maxPixelRatio: 1.5, antialias: true, bloom: 0.12, grain: 0.004 },
+  high: { maxPixelRatio: 2, antialias: true, bloom: 0.2, grain: 0.0055 },
+} as const satisfies Record<QualityTier, {
+  maxPixelRatio: number;
+  antialias: boolean;
+  bloom: number;
+  grain: number;
+}>;
+
+/** Final full-frame grade. Subtle: the authored palette must remain the picture. */
+export const POST = {
+  VIGNETTE: 0.24,
+  SATURATION: 1.06,
+  CONTRAST: 1.045,
+  BLOOM_THRESHOLD: 0.72,
+} as const;
+
+export function qualityTier(value: string | null | undefined): QualityTier {
+  if (value === 'low' || value === 'high' || value === 'balanced') return value;
+  return 'balanced';
+}

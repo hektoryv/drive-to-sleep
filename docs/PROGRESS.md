@@ -1203,3 +1203,52 @@ away into shadow beneath it.
 **Next:** the dials. `daylight.instrumentGlow` is now reachable and nothing
 reads it, so the cabin goes black at night — which is the one time of day the
 instruments are supposed to be the brightest thing in the car.
+
+---
+
+## 2026-09-21 — Phase 3 complete: the road passes through places
+
+**Built:** the remaining view phase as one coherent outside-world pass.
+
+- Three deterministic regions — mountain, desert and country — now blend over
+  1.4 km rather than changing at a seam. The road shoulder, verge, terrain,
+  vegetation density, colour and silhouette all consume the same weights
+  (ADR-0021).
+- Vegetation has regional prop tables: mountain spires, sparse desert cactus
+  and lower country scrub. Faceted stones occupy the nearest band where a
+  billboard's flatness is visible and fade before their extra geometry stops
+  paying for itself.
+- Guardrail is generated only where ground outside the shoulder falls away.
+  Raw terrain tests are noisy, so short gaps are joined and isolated fragments
+  are removed before geometry is built; this turns threshold dots into
+  plausible engineered runs.
+- Height-aware haze now sits on top of distance fog. The cloud thresholds are
+  narrower, giving the sky the harder cut-paper slabs of the reference. At
+  night an opposite-sun moon disc also provides a restrained cool key to the
+  world surfaces.
+- The combined world and cockpit frame now goes through one final grade:
+  restrained bright-neighbour bloom, saturation/contrast, vignette and a very
+  small animated grain. Low, balanced and high fill-rate tiers vary DPR,
+  antialias, bloom and grain (ADR-0022).
+
+**Verified:**
+
+- `npm run typecheck`, architectural lint and all 220 tests pass.
+- The new `--world` harness matrix rendered 20 scenes across four seeds,
+  mountain/country/desert distances and dawn through night with no browser or
+  shader errors. The contact sheet is the Phase 3 exit criterion, not one
+  cherry-picked golden-hour frame.
+- The software-rendered regression capture at 6.2 km reports 0.052 ms of sim
+  work per displayed frame. Its 24.9 ms graphics median is SwiftShader and not
+  a phone number; device profiling remains Phase 6.
+
+**Caught before release:** the first post-process implementation multiplied
+viewport/scissor coordinates by device pixel ratio before passing them to
+three.js. three.js already performs that conversion, so the target was scaled
+twice and the right third of the frame was cropped at balanced quality. A
+full-resolution review exposed it; the corrected frame restores the authored
+72° horizontal view. This is now stated in ADR-0022 because it is an easy bug
+to reintroduce.
+
+**Next:** Phase 5 — deterministic traffic, collision and the session around
+the drive. The final cockpit remains explicitly postponed under ADR-0020.

@@ -31,6 +31,7 @@ import { hash01, hash2D01 } from '../../core/rng.js';
 import { ROADSIDE } from '../tuning.js';
 import { terrainHeightAt } from '../gen/terrain.js';
 import { chevronPlacement, needsChevrons } from '../gen/signage.js';
+import { needsGuardrail, smoothGuardrailMask } from '../gen/guardrail.js';
 import type { Stations } from '../gen/stations.js';
 import { WORLD_COMMON_GLSL, type WorldUniforms } from './materials.js';
 
@@ -195,6 +196,45 @@ const CHEVRON_FRAG = /* glsl */ `
   }
 `;
 
+const GUARDRAIL_VERT = /* glsl */ `
+  attribute vec2 face;
+  attribute float post;
+  varying vec2 vUv;
+  varying float vPost;
+  varying vec3 vWorld;
+  varying vec3 vNormal;
+
+  void main() {
+    vUv = face;
+    vPost = post;
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorld = world.xyz;
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+
+const GUARDRAIL_FRAG = /* glsl */ `
+  uniform vec3 uMetal;
+  uniform vec3 uMetalShadow;
+  varying vec2 vUv;
+  varying float vPost;
+  ${WORLD_COMMON_GLSL}
+
+  void main() {
+    float beamBottom = ${(ROADSIDE.GUARDRAIL_BEAM_BOTTOM_M / ROADSIDE.GUARDRAIL_HEIGHT_M).toFixed(3)};
+    float beam = step(beamBottom, vUv.y);
+    float support = vPost * step(vUv.x, 0.13) * (1.0 - step(beamBottom + 0.08, vUv.y));
+    if (max(beam, support) < 0.5) discard;
+
+    float ridge = step(beamBottom + 0.14, vUv.y);
+    vec3 albedo = mix(uMetalShadow, uMetal, ridge * 0.72 + 0.18);
+    gl_FragColor = vec4(applyFog(lightSurface(albedo, vNormal)), 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
+
 export interface Roadside {
   readonly group: THREE.Group;
   rebuild(stations: Stations, originX: number, originY: number, originZ: number): void;
@@ -342,8 +382,62 @@ export function createRoadside(shared: WorldUniforms, capacityStations: number):
   chevronMesh.frustumCulled = false;
   chevronMesh.renderOrder = 2;
 
+  // --- guardrail ---------------------------------------------------------
+
+  const maxGuardrails = (capacityStations - 1) * 2;
+  const guardPositions = new Float32Array(maxGuardrails * 4 * 3);
+  const guardNormals = new Float32Array(maxGuardrails * 4 * 3);
+  const guardFaces = new Float32Array(maxGuardrails * 4 * 2);
+  const guardPosts = new Float32Array(maxGuardrails * 4);
+  const guardIndices = new Uint32Array(maxGuardrails * 6);
+
+  for (let i = 0; i < maxGuardrails; i++) {
+    for (let c = 0; c < 4; c++) {
+      const corner = CORNERS[c] as readonly [number, number];
+      const vi = i * 4 + c;
+      guardFaces[vi * 2] = corner[0] + 0.5;
+      guardFaces[vi * 2 + 1] = corner[1];
+    }
+    const a = i * 4;
+    guardIndices[i * 6] = a;
+    guardIndices[i * 6 + 1] = a + 1;
+    guardIndices[i * 6 + 2] = a + 2;
+    guardIndices[i * 6 + 3] = a + 1;
+    guardIndices[i * 6 + 4] = a + 3;
+    guardIndices[i * 6 + 5] = a + 2;
+  }
+
+  const guardGeometry = new THREE.BufferGeometry();
+  const guardPositionAttr = new THREE.BufferAttribute(guardPositions, 3);
+  const guardNormalAttr = new THREE.BufferAttribute(guardNormals, 3);
+  const guardPostAttr = new THREE.BufferAttribute(guardPosts, 1);
+  guardPositionAttr.setUsage(THREE.DynamicDrawUsage);
+  guardNormalAttr.setUsage(THREE.DynamicDrawUsage);
+  guardPostAttr.setUsage(THREE.DynamicDrawUsage);
+  guardGeometry.setAttribute('position', guardPositionAttr);
+  guardGeometry.setAttribute('normal', guardNormalAttr);
+  guardGeometry.setAttribute('face', new THREE.BufferAttribute(guardFaces, 2));
+  guardGeometry.setAttribute('post', guardPostAttr);
+  guardGeometry.setIndex(new THREE.BufferAttribute(guardIndices, 1));
+
+  const guardMaterial = new THREE.ShaderMaterial({
+    vertexShader: GUARDRAIL_VERT,
+    fragmentShader: GUARDRAIL_FRAG,
+    uniforms: {
+      ...shared,
+      uMetal: { value: new THREE.Color(0xaaa7a0) },
+      uMetalShadow: { value: new THREE.Color(0x57545a) },
+    },
+    side: THREE.DoubleSide,
+  });
+  const guardMesh = new THREE.Mesh(guardGeometry, guardMaterial);
+  guardMesh.frustumCulled = false;
+  guardMesh.renderOrder = 2;
+  const guardLeft = new Uint8Array(capacityStations);
+  const guardRight = new Uint8Array(capacityStations);
+
   const group = new THREE.Group();
-  group.add(poleMesh, wireMesh, chevronMesh);
+  group.add(poleMesh, wireMesh, chevronMesh, guardMesh);
 
   // Scratch for one rebuild's pole anchors — the crossarm position and the
   // road's right vector at each, which is what the wires need to be strung.
@@ -516,6 +610,99 @@ export function createRoadside(shared: WorldUniforms, capacityStations: number):
     chevronTurnAttr.needsUpdate = true;
     chevronMesh.position.set(originX, originY, originZ);
 
+    // First classify every station, then turn noisy height samples into long
+    // engineered runs. Without this pass the threshold produces a dotted
+    // necklace of four-metre rail fragments on gently changing slopes.
+    guardLeft.fill(0, 0, rows);
+    guardRight.fill(0, 0, rows);
+    for (let row = 0; row < rows; row++) {
+      const index = first + row;
+      const slot = index % stations.capacity;
+      const half = stations.halfWidth[slot] ?? 0;
+      const s = index * stations.spacing;
+      for (let side = -1; side <= 1; side += 2) {
+        const t = side * (half + ROADSIDE.GUARDRAIL_GAP_M);
+        const y = terrainHeightAt(s, t, stations.y[slot] ?? 0, stations.seed);
+        const outerY = terrainHeightAt(
+          s,
+          t + side * ROADSIDE.GUARDRAIL_DROP_SAMPLE_M,
+          stations.y[slot] ?? 0,
+          stations.seed,
+        );
+        const mask = side < 0 ? guardLeft : guardRight;
+        mask[row] = needsGuardrail(y, outerY) ? 1 : 0;
+      }
+    }
+    smoothGuardrailMask(
+      guardLeft,
+      rows,
+      ROADSIDE.GUARDRAIL_JOIN_GAP_STATIONS,
+      ROADSIDE.GUARDRAIL_MIN_RUN_STATIONS,
+    );
+    smoothGuardrailMask(
+      guardRight,
+      rows,
+      ROADSIDE.GUARDRAIL_JOIN_GAP_STATIONS,
+      ROADSIDE.GUARDRAIL_MIN_RUN_STATIONS,
+    );
+
+    let guard = 0;
+    for (let row = 0; row < rows - 1; row++) {
+      const indexA = first + row;
+      const indexB = indexA + 1;
+      const slotA = indexA % stations.capacity;
+      const slotB = indexB % stations.capacity;
+
+      for (let side = -1; side <= 1; side += 2) {
+        if (guard >= maxGuardrails) break;
+        const mask = side < 0 ? guardLeft : guardRight;
+        if (mask[row] === 0 || mask[row + 1] === 0) continue;
+        const halfA = stations.halfWidth[slotA] ?? 0;
+        const halfB = stations.halfWidth[slotB] ?? halfA;
+        const tA = side * (halfA + ROADSIDE.GUARDRAIL_GAP_M);
+        const tB = side * (halfB + ROADSIDE.GUARDRAIL_GAP_M);
+        const sA = indexA * stations.spacing;
+        const sB = indexB * stations.spacing;
+        const yA = terrainHeightAt(sA, tA, stations.y[slotA] ?? 0, stations.seed);
+        const yB = terrainHeightAt(sB, tB, stations.y[slotB] ?? 0, stations.seed);
+        const headingA = stations.heading[slotA] ?? 0;
+        const headingB = stations.heading[slotB] ?? headingA;
+        const rxA = Math.cos(headingA);
+        const rzA = -Math.sin(headingA);
+        const rxB = Math.cos(headingB);
+        const rzB = -Math.sin(headingB);
+        const ax = (stations.x[slotA] ?? 0) + rxA * tA;
+        const az = (stations.z[slotA] ?? 0) + rzA * tA;
+        const bx = (stations.x[slotB] ?? 0) + rxB * tB;
+        const bz = (stations.z[slotB] ?? 0) + rzB * tB;
+        const nx = -side * (rxA + rxB) * 0.5;
+        const nz = -side * (rzA + rzB) * 0.5;
+        const hasPost = indexA % ROADSIDE.GUARDRAIL_POST_EVERY_STATIONS === 0 ? 1 : 0;
+
+        const base = guard * 4;
+        for (let c = 0; c < 4; c++) {
+          const vi = base + c;
+          const endB = c === 1 || c === 3;
+          const top = c >= 2;
+          guardPositions[vi * 3] = (endB ? bx : ax) - originX;
+          guardPositions[vi * 3 + 1] =
+            (endB ? yB : yA) + (top ? ROADSIDE.GUARDRAIL_HEIGHT_M : 0) - originY;
+          guardPositions[vi * 3 + 2] = (endB ? bz : az) - originZ;
+          guardNormals[vi * 3] = nx;
+          guardNormals[vi * 3 + 1] = 0.18;
+          guardNormals[vi * 3 + 2] = nz;
+          guardPosts[vi] = hasPost;
+        }
+        guard++;
+      }
+    }
+
+    guardGeometry.setDrawRange(0, guard * 6);
+    guardPositionAttr.needsUpdate = true;
+    guardNormalAttr.needsUpdate = true;
+    guardPostAttr.needsUpdate = true;
+    guardMesh.position.set(originX, originY, originZ);
+
     poleMesh.position.set(originX, originY, originZ);
     wireMesh.position.set(originX, originY, originZ);
   }
@@ -530,6 +717,8 @@ export function createRoadside(shared: WorldUniforms, capacityStations: number):
       wireMaterial.dispose();
       chevronGeometry.dispose();
       chevronMaterial.dispose();
+      guardGeometry.dispose();
+      guardMaterial.dispose();
     },
   };
 }

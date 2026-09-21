@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import { ROAD } from '../tuning.js';
+import { BIOMES, HEIGHT_FOG, ROAD, SKY } from '../tuning.js';
 
 /**
  * Writes an authored palette colour into a THREE.Color.
@@ -34,6 +34,12 @@ export interface WorldUniforms {
   uAmbient: { value: THREE.Color };
   uFogColor: { value: THREE.Color };
   uFogDensity: { value: number };
+  uFogBaseY: { value: number };
+  uFogHeightFalloff: { value: number };
+  uFogHeightStrength: { value: number };
+  uMoonDir: { value: THREE.Vector3 };
+  uMoonColor: { value: THREE.Color };
+  uMoonStrength: { value: number };
 }
 
 export function createWorldUniforms(): WorldUniforms {
@@ -43,6 +49,12 @@ export function createWorldUniforms(): WorldUniforms {
     uAmbient: { value: new THREE.Color(0x5a6b82) },
     uFogColor: { value: new THREE.Color(0xbcd0dc) },
     uFogDensity: { value: 0.00022 },
+    uFogBaseY: { value: HEIGHT_FOG.BASE_ABOVE_ROAD_M },
+    uFogHeightFalloff: { value: 1 / HEIGHT_FOG.SCALE_M },
+    uFogHeightStrength: { value: HEIGHT_FOG.STRENGTH },
+    uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+    uMoonColor: { value: new THREE.Color(SKY.MOON_LIGHT_COLOR) },
+    uMoonStrength: { value: 0 },
   };
 }
 
@@ -59,6 +71,12 @@ export const WORLD_COMMON_GLSL = /* glsl */ `
   uniform vec3 uAmbient;
   uniform vec3 uFogColor;
   uniform float uFogDensity;
+  uniform float uFogBaseY;
+  uniform float uFogHeightFalloff;
+  uniform float uFogHeightStrength;
+  uniform vec3 uMoonDir;
+  uniform vec3 uMoonColor;
+  uniform float uMoonStrength;
 
   varying vec3 vWorld;
   varying vec3 vNormal;
@@ -67,12 +85,18 @@ export const WORLD_COMMON_GLSL = /* glsl */ `
     // Half-lambert: the unlit side lifts toward ambient instead of going
     // black. Nothing in this world is ever pure black (ADR-0007).
     float ndl = dot(normalize(n), uSunDir) * 0.5 + 0.5;
-    return albedo * (uAmbient + uSunColor * ndl * ndl);
+    float moonNdl = max(dot(normalize(n), uMoonDir), 0.0);
+    return albedo * (
+      uAmbient + uSunColor * ndl * ndl + uMoonColor * moonNdl * uMoonStrength
+    );
   }
 
   vec3 applyFog(vec3 col) {
     float dist = length(vWorld - cameraPosition);
-    float f = 1.0 - exp(-pow(dist * uFogDensity, 2.0));
+    float baseFog = 1.0 - exp(-pow(dist * uFogDensity, 2.0));
+    float lowY = min(vWorld.y, cameraPosition.y);
+    float heightFog = exp(-max(0.0, lowY - uFogBaseY) * uFogHeightFalloff);
+    float f = baseFog * mix(1.0, heightFog, uFogHeightStrength);
     return mix(col, uFogColor, clamp(f, 0.0, 1.0));
   }
 `;
@@ -80,14 +104,17 @@ export const WORLD_COMMON_GLSL = /* glsl */ `
 const ROAD_VERT = /* glsl */ `
   attribute float lateral;
   attribute float halfWidth;
+  attribute vec3 biome;
   varying float vLateral;
   varying float vHalfWidth;
   varying vec3 vWorld;
   varying vec3 vNormal;
+  varying vec3 vBiome;
 
   void main() {
     vLateral = lateral;
     vHalfWidth = halfWidth;
+    vBiome = biome;
     vec4 world = modelMatrix * vec4(position, 1.0);
     vWorld = world.xyz;
     vNormal = normalize(mat3(modelMatrix) * normal);
@@ -97,8 +124,12 @@ const ROAD_VERT = /* glsl */ `
 
 const ROAD_FRAG = /* glsl */ `
   uniform vec3 uTarmac;
-  uniform vec3 uShoulder;
-  uniform vec3 uVerge;
+  uniform vec3 uShoulderMountain;
+  uniform vec3 uShoulderDesert;
+  uniform vec3 uShoulderCountry;
+  uniform vec3 uVergeMountain;
+  uniform vec3 uVergeDesert;
+  uniform vec3 uVergeCountry;
   uniform vec3 uCentreLineColour;
   uniform vec3 uEdgeLineColour;
   uniform float uShoulderWidth;
@@ -107,6 +138,7 @@ const ROAD_FRAG = /* glsl */ `
   uniform float uEdgeLine;
   varying float vLateral;
   varying float vHalfWidth;
+  varying vec3 vBiome;
   ${WORLD_COMMON_GLSL}
 
   // One antialiased band, centred on "centre" with half-width "hw".
@@ -120,8 +152,10 @@ const ROAD_FRAG = /* glsl */ `
     float lat = vLateral;
     float dist = abs(lat);
 
-    vec3 albedo = uVerge;
-    albedo = mix(albedo, uShoulder, band(dist, 0.0, vHalfWidth + uShoulderWidth));
+    vec3 verge = uVergeMountain * vBiome.x + uVergeDesert * vBiome.y + uVergeCountry * vBiome.z;
+    vec3 shoulder = uShoulderMountain * vBiome.x + uShoulderDesert * vBiome.y + uShoulderCountry * vBiome.z;
+    vec3 albedo = verge;
+    albedo = mix(albedo, shoulder, band(dist, 0.0, vHalfWidth + uShoulderWidth));
     albedo = mix(albedo, uTarmac, band(dist, 0.0, vHalfWidth));
 
     // Markings. The edge lines sit just inside the tarmac, as they do on a
@@ -142,21 +176,31 @@ const ROAD_FRAG = /* glsl */ `
 `;
 
 const TERRAIN_VERT = /* glsl */ `
+  attribute vec3 biome;
   varying vec3 vWorld;
   varying vec3 vNormal;
+  varying vec3 vBiome;
 
   void main() {
     vec4 world = modelMatrix * vec4(position, 1.0);
     vWorld = world.xyz;
     vNormal = normalize(mat3(modelMatrix) * normal);
+    vBiome = biome;
     gl_Position = projectionMatrix * viewMatrix * world;
   }
 `;
 
 const TERRAIN_FRAG = /* glsl */ `
-  uniform vec3 uLow;
-  uniform vec3 uHigh;
-  uniform vec3 uRock;
+  uniform vec3 uLowMountain;
+  uniform vec3 uLowDesert;
+  uniform vec3 uLowCountry;
+  uniform vec3 uHighMountain;
+  uniform vec3 uHighDesert;
+  uniform vec3 uHighCountry;
+  uniform vec3 uRockMountain;
+  uniform vec3 uRockDesert;
+  uniform vec3 uRockCountry;
+  varying vec3 vBiome;
   ${WORLD_COMMON_GLSL}
 
   void main() {
@@ -165,8 +209,11 @@ const TERRAIN_FRAG = /* glsl */ `
     // a single noise field reads as terrain rather than as a lumpy sheet.
     float height = clamp(vWorld.y / 40.0 + 0.5, 0.0, 1.0);
     float steep = 1.0 - clamp(normalize(vNormal).y, 0.0, 1.0);
-    vec3 albedo = mix(uLow, uHigh, height);
-    albedo = mix(albedo, uRock, smoothstep(0.35, 0.72, steep));
+    vec3 low = uLowMountain * vBiome.x + uLowDesert * vBiome.y + uLowCountry * vBiome.z;
+    vec3 high = uHighMountain * vBiome.x + uHighDesert * vBiome.y + uHighCountry * vBiome.z;
+    vec3 rock = uRockMountain * vBiome.x + uRockDesert * vBiome.y + uRockCountry * vBiome.z;
+    vec3 albedo = mix(low, high, height);
+    albedo = mix(albedo, rock, smoothstep(0.35, 0.72, steep));
     gl_FragColor = vec4(applyFog(lightSurface(albedo, vNormal)), 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -180,8 +227,12 @@ export function createRoadMaterial(shared: WorldUniforms): THREE.ShaderMaterial 
     uniforms: {
       ...shared,
       uTarmac: { value: new THREE.Color(0x45404a) },
-      uShoulder: { value: new THREE.Color(0x795448) },
-      uVerge: { value: new THREE.Color(0x8a6143) },
+      uShoulderMountain: color(BIOMES.SHOULDER[0]),
+      uShoulderDesert: color(BIOMES.SHOULDER[1]),
+      uShoulderCountry: color(BIOMES.SHOULDER[2]),
+      uVergeMountain: color(BIOMES.VERGE[0]),
+      uVergeDesert: color(BIOMES.VERGE[1]),
+      uVergeCountry: color(BIOMES.VERGE[2]),
       uCentreLineColour: { value: new THREE.Color(0xe9a11b) },
       uEdgeLineColour: { value: new THREE.Color(0xd8d2c0) },
       uShoulderWidth: { value: 0.8 },
@@ -198,9 +249,19 @@ export function createTerrainMaterial(shared: WorldUniforms): THREE.ShaderMateri
     fragmentShader: TERRAIN_FRAG,
     uniforms: {
       ...shared,
-      uLow: { value: new THREE.Color(0x8a5b3c) },
-      uHigh: { value: new THREE.Color(0xa86943) },
-      uRock: { value: new THREE.Color(0x754657) },
+      uLowMountain: color(BIOMES.TERRAIN_LOW[0]),
+      uLowDesert: color(BIOMES.TERRAIN_LOW[1]),
+      uLowCountry: color(BIOMES.TERRAIN_LOW[2]),
+      uHighMountain: color(BIOMES.TERRAIN_HIGH[0]),
+      uHighDesert: color(BIOMES.TERRAIN_HIGH[1]),
+      uHighCountry: color(BIOMES.TERRAIN_HIGH[2]),
+      uRockMountain: color(BIOMES.TERRAIN_ROCK[0]),
+      uRockDesert: color(BIOMES.TERRAIN_ROCK[1]),
+      uRockCountry: color(BIOMES.TERRAIN_ROCK[2]),
     },
   });
+}
+
+function color(hex: number): { value: THREE.Color } {
+  return { value: new THREE.Color(hex) };
 }

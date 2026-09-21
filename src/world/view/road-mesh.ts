@@ -24,6 +24,7 @@
 import * as THREE from 'three';
 import { ROAD } from '../tuning.js';
 import { terrainHeightAt } from '../gen/terrain.js';
+import { biomeWeightsAt, makeBiomeWeights } from '../gen/biomes.js';
 import type { Stations } from '../gen/stations.js';
 
 /**
@@ -65,6 +66,7 @@ export function createRoadMesh(material: THREE.Material, capacityStations: numbe
   const normals = new Float32Array(vertexCount * 3);
   const lateral = new Float32Array(vertexCount);
   const halfWidths = new Float32Array(vertexCount);
+  const biomes = new Float32Array(vertexCount * 3);
   const indices = new Uint32Array(quadCount * 6);
 
   const geometry = new THREE.BufferGeometry();
@@ -72,20 +74,24 @@ export function createRoadMesh(material: THREE.Material, capacityStations: numbe
   const normalAttr = new THREE.BufferAttribute(normals, 3);
   const lateralAttr = new THREE.BufferAttribute(lateral, 1);
   const halfWidthAttr = new THREE.BufferAttribute(halfWidths, 1);
+  const biomeAttr = new THREE.BufferAttribute(biomes, 3);
   positionAttr.setUsage(THREE.DynamicDrawUsage);
   normalAttr.setUsage(THREE.DynamicDrawUsage);
   lateralAttr.setUsage(THREE.DynamicDrawUsage);
   halfWidthAttr.setUsage(THREE.DynamicDrawUsage);
+  biomeAttr.setUsage(THREE.DynamicDrawUsage);
 
   geometry.setAttribute('position', positionAttr);
   geometry.setAttribute('normal', normalAttr);
   geometry.setAttribute('lateral', lateralAttr);
   geometry.setAttribute('halfWidth', halfWidthAttr);
+  geometry.setAttribute('biome', biomeAttr);
   const indexAttr = new THREE.BufferAttribute(indices, 1);
   indexAttr.setUsage(THREE.DynamicDrawUsage);
   geometry.setIndex(indexAttr);
 
   const mesh = new THREE.Mesh(geometry, material);
+  const biome = makeBiomeWeights();
   // The mesh spans kilometres and is always in view; culling it against a
   // bounding sphere that would have to be recomputed on every rebuild is
   // strictly wasted work.
@@ -111,6 +117,7 @@ export function createRoadMesh(material: THREE.Material, capacityStations: numbe
       const bank = stations.bank[slot] ?? 0;
       const halfWidth = stations.halfWidth[slot] ?? ROAD.HALF_WIDTH_M;
       const s = index * stations.spacing;
+      biomeWeightsAt(s, stations.seed, biome);
 
       // Right-hand normal of the direction of travel.
       const rx = Math.cos(heading);
@@ -141,6 +148,9 @@ export function createRoadMesh(material: THREE.Material, capacityStations: numbe
         positions[vi * 3 + 2] = sz + rz * t * cosBank - originZ;
         lateral[vi] = t;
         halfWidths[vi] = halfWidth;
+        biomes[vi * 3] = biome.mountain;
+        biomes[vi * 3 + 1] = biome.desert;
+        biomes[vi * 3 + 2] = biome.country;
       }
     }
 
@@ -152,6 +162,7 @@ export function createRoadMesh(material: THREE.Material, capacityStations: numbe
     normalAttr.needsUpdate = true;
     lateralAttr.needsUpdate = true;
     halfWidthAttr.needsUpdate = true;
+    biomeAttr.needsUpdate = true;
     indexAttr.needsUpdate = true;
 
     mesh.position.set(originX, originY, originZ);

@@ -26,3 +26,5 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0018](ADR-0018-layered-cockpit-sprites.md) | The cockpit is layered 2.5D art, not a full-car model | Accepted |
 | [0019](ADR-0019-depth-separated-cockpit-cards.md) | Cockpit sprites occupy angled planes and an asymmetric crop | Accepted (refines 0018) |
 | [0020](ADR-0020-postpone-final-cockpit.md) | Restore the procedural 3D cabin and postpone final cockpit art | Accepted (supersedes 0018–0019 as the active implementation) |
+| [0021](ADR-0021-distance-biome-blending.md) | Biomes are deterministic distance cells blended as shared weights | Accepted |
+| [0022](ADR-0022-combined-post-stack.md) | Post-process the combined world and cockpit once, with renderer quality tiers | Accepted |
