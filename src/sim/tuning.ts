@@ -31,24 +31,25 @@ export const SIM = {
 // ---------------------------------------------------------------------------
 
 export const CAR = {
-  TOP_SPEED_MS: 195 / 3.6,
+  /** Safety ceiling. Aerodynamic drag settles the car below this. */
+  TOP_SPEED_MS: 245 / 3.6,
   WHEELBASE_M: 2.27,
 
   // --- Longitudinal ---
 
-  /** Peak acceleration from a standstill, m/s². About 0.57 g. */
-  PEAK_ACCEL: 5.6,
-  /**
-   * How much of that thrust is gone by the top end, 0–1. Higher = more
-   * naturally aspirated, shove low down and nothing left up top.
-   */
-  THRUST_FALLOFF: 0.8,
+  /** Owner-requested performance baseline, rather than an unnamed feel value. */
+  POWER_HP: 200,
+  MASS_KG: 1250,
+  /** Crank power that reaches the tyres through the gearbox and final drive. */
+  DRIVETRAIN_EFFICIENCY: 0.84,
+  /** Launch/low-gear acceleration cap. Power takes over above ~86 km/h. */
+  PEAK_ACCEL: 4.2,
   /**
    * Aerodynamic drag, m/s² per (m/s)². Together with the thrust curve this is
    * what actually settles the top speed — the cap should never be what stops
    * the car, or the last 20 km/h arrive with no sense of effort.
    */
-  DRAG: 0.00042,
+  DRAG: 0.0003,
   /**
    * Rolling resistance, m/s². Constant, not proportional to speed: it is the
    * tyres deforming, not the air. It is what makes lifting off feel like
@@ -86,11 +87,11 @@ export const CAR = {
   GRIP_GRAVEL: 0.62,
   GRIP_GRASS: 0.45,
   /**
-   * Lateral grip as a multiple of g. Above 1 would be a racing slick; a road
-   * car on 1972 rubber is nearer 0.85, and the lower it is the earlier the
-   * car starts to lean on its outside tyres.
+   * Lateral grip as a multiple of g. The owner explicitly set the tarmac
+   * ceiling to 1.1 g after driving the first device build; loose surfaces
+   * still multiply this down through their own grip values.
    */
-  LATERAL_GRIP_SCALE: 0.85,
+  LATERAL_GRIP_SCALE: 1.1,
   /** How much refused rotation becomes sideways motion. Higher = slidier. */
   SLIDE_GAIN: 0.55,
   /** How fast the tyres scrub a slide off, per second, before grip. */
@@ -121,7 +122,7 @@ export const ATTITUDE = {
    * Lateral acceleration, m/s², at which the body reaches full lean. Set near
    * the grip limit so maximum roll means "at the edge" rather than "turning".
    */
-  REF_LATERAL_ACCEL: 7.5,
+  REF_LATERAL_ACCEL: 10.5,
 
   PITCH_MAX: 2.5 * DEG,
   PITCH_FREQ_HZ: 2.8,

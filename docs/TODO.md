@@ -32,7 +32,8 @@ grade. The next phase supplies the moving stakes and the session around them.
 - [ ] Four or five period vehicle silhouettes
 - [ ] Capsule collision, impulse and speed scrub
 - [ ] Scoring: distance, flow and overtakes
-- [ ] HUD, start/pause panels and drive summary
+- [x] Always-visible numeric speedometer, pulled forward at the owner's request
+- [ ] HUD remainder, start/pause panels and drive summary
 - [ ] Persistence: best distance, settings and resume point
 
 ## Parked — Phase 4: The cockpit
@@ -50,15 +51,6 @@ with working instruments, while final interior production is postponed.
 
 ## Later
 
-- [ ] **Calibrate the car.** Acceleration, top speed, cornering g and braking
-      are placeholder numbers that have never been measured against anything.
-      Deferred on the owner's call (2026-09-20): *"as long as you keep stuff
-      properly modular, we can just fix that later."* All of it lives in
-      `sim/tuning.ts` — `PEAK_ACCEL`, `TOP_SPEED_MS`, `DRAG`, `THRUST_FALLOFF`,
-      `LATERAL_GRIP_SCALE`, `BRAKE_G` — and `npm run telemetry` prints what the
-      car actually does, so this is a measure-then-set job rather than a search.
-      Worth doing against real figures for the car being evoked: ~5.5 s to
-      100 km/h, ~245 km/h, ~0.85 g.
 - [ ] **Sound: the rest of Phase 8.** Surface transitions as moments rather
       than crossfades, rumble strips and impacts from the events `sim/` already
       emits, and a mute control once there is a HUD to put it in.

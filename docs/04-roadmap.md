@@ -168,7 +168,8 @@ cabin is unmistakably a 70s sports car. That single image is the test.
 - [ ] Capsule collision, impulse, speed scrub
 - [ ] Collision jolt into the attitude springs
 - [ ] Scoring: distance, flow, overtakes
-- [ ] HUD: gauge-based speed, distance, flow arc, overtake tally
+- [x] First HUD slice: always-visible numeric speedometer
+- [ ] HUD remainder: distance, flow arc, overtake tally
 - [ ] Start screen, pause panel, drive summary
 - [ ] Persistence: best distance, settings, resume point
 

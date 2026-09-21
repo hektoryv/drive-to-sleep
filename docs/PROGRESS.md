@@ -1252,3 +1252,37 @@ to reintroduce.
 
 **Next:** Phase 5 — deterministic traffic, collision and the session around
 the drive. The final cockpit remains explicitly postponed under ADR-0020.
+
+---
+
+## 2026-09-21 — The car gets numbers, and the driver gets one
+
+The owner found the placeholder handling too difficult and supplied the
+calibration that had deliberately been parked: **1.1 g maximum tarmac grip,
+200 hp and 1,250 kg.** The anonymous acceleration curve is now a power envelope
+with explicit crank power, mass and driveline efficiency. Low speed remains
+launch-capped, then `P = Fv` limits thrust while aerodynamic drag determines
+the terminal speed.
+
+Measured on flat tarmac after the change:
+
+- 0–100 km/h: **7.25 s**
+- 0–160 km/h: **15.30 s**
+- terminal speed: **235.4 km/h**, below the 245 km/h safety cap
+- lateral grip ceiling: **1.10 g**
+
+The long-road probe stayed on tarmac for its full six-kilometre sample, peaked
+at 1.06 g under the conservative autopilot and carried only 1.85° peak slip.
+The body-roll reference was moved with the tyre limit so ordinary cornering
+does not look exaggerated merely because the tyres improved.
+
+**Also built:** the first permanent Phase 5 HUD element, pulled forward because
+the driver needs it now. A high-contrast numeric km/h readout sits inside the
+top-right safe area, updates only when its integer value changes and consumes
+the read-only `CarView` contract from a sealed `ui` module. It adds no coupling
+to `sim/` and is visible independently of the three-finger debug panel.
+
+**Verified:** the golden-hour portrait shot shows the display clear of both the
+road and cockpit; typecheck, architectural lint and all 221 tests pass.
+
+**Next:** build and device check, then Phase 5 traffic.

@@ -46,20 +46,20 @@ describe('longitudinal', () => {
     const kmh = state.speedMs * 3.6;
     // Drag, not the clamp, should be what settles it — if this is pinned at
     // exactly the cap, the drag coefficient is doing nothing.
-    expect(kmh).toBeGreaterThan(170);
-    expect(kmh).toBeLessThanOrEqual(195.01);
+    expect(kmh).toBeGreaterThan(230);
+    expect(kmh).toBeLessThan(240);
   });
 
-  it('accelerates like a fast 1970s road car, not a supercar or a milk float', () => {
+  it('accelerates like a 200 hp, 1,250 kg road car', () => {
     const toHundred = timeTo(100);
-    expect(toHundred).toBeGreaterThan(4.5);
-    expect(toHundred).toBeLessThan(11);
+    expect(toHundred).toBeGreaterThan(6);
+    expect(toHundred).toBeLessThan(8);
   });
 
-  it('pulls hardest low down', () => {
-    // A naturally aspirated engine, shaped as a curve because there is no
-    // gearbox to model (ADR-0004).
-    expect(thrustAt(0)).toBeGreaterThan(thrustAt(CAR.TOP_SPEED_MS * 0.5));
+  it('is launch-capped low down and power-limited at speed', () => {
+    expect(thrustAt(0)).toBe(CAR.PEAK_ACCEL);
+    expect(thrustAt(10)).toBe(CAR.PEAK_ACCEL);
+    expect(thrustAt(10)).toBeGreaterThan(thrustAt(CAR.TOP_SPEED_MS * 0.5));
     expect(thrustAt(CAR.TOP_SPEED_MS * 0.5)).toBeGreaterThan(thrustAt(CAR.TOP_SPEED_MS));
   });
 

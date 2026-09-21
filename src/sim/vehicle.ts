@@ -124,14 +124,15 @@ export function steerAuthority(speedMs: number): number {
 /**
  * Engine thrust at a given speed, m/s².
  *
- * Front-loaded: it is a naturally aspirated flat six from 1972, so there is
- * shove low down and it tails off toward the top end rather than pulling like
- * a turbo. Shaped as a curve rather than modelled with a gearbox, because the
- * game has no gears (ADR-0004: one finger, no thought).
+ * A gearbox-free power envelope: low speed is traction/launch capped, then
+ * acceleration is limited by P = Fv. This preserves the one-finger automatic
+ * car while making the requested 200 hp / 1,250 kg baseline mean something
+ * measurable rather than merely appearing in a comment.
  */
 export function thrustAt(speedMs: number): number {
-  const t = clamp(speedMs / CAR.TOP_SPEED_MS, 0, 1);
-  return CAR.PEAK_ACCEL * (1 - t * t * CAR.THRUST_FALLOFF);
+  const wattsAtTyres = CAR.POWER_HP * 745.7 * CAR.DRIVETRAIN_EFFICIENCY;
+  const powerLimited = wattsAtTyres / (CAR.MASS_KG * Math.max(speedMs, 1));
+  return Math.min(CAR.PEAK_ACCEL, powerLimited);
 }
 
 /** Tachometer needle. No gearbox, so it is a function of road speed. */

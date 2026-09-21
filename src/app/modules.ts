@@ -19,6 +19,7 @@ import { createVehicleModule } from '../sim/vehicle-module.js';
 import { createViewModule } from '../render/view-module.js';
 import { createCockpitModule } from '../cockpit/cockpit-module.js';
 import { createAudioModule } from '../audio/audio-module.js';
+import { createSpeedometerModule } from '../ui/speedometer.js';
 
 export interface ModuleSetOptions {
   view: ViewState;
@@ -42,5 +43,7 @@ export function createModules(options: ModuleSetOptions): GameModule[] {
     // position in this list is free. Kept at the end because a domain that
     // provides nothing is the easiest one to reason about last.
     createAudioModule(),
+    // Presentation only: reads the car contract after every simulation step.
+    createSpeedometerModule(),
   ];
 }
