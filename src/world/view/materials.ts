@@ -203,6 +203,21 @@ const TERRAIN_FRAG = /* glsl */ `
   varying vec3 vBiome;
   ${WORLD_COMMON_GLSL}
 
+  float terrainHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
+  float terrainNoise(vec2 p) {
+    vec2 cell = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = terrainHash(cell);
+    float b = terrainHash(cell + vec2(1.0, 0.0));
+    float c = terrainHash(cell + vec2(0.0, 1.0));
+    float d = terrainHash(cell + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
   void main() {
     // Two cues, both cheap and both doing a lot of work: height tints the
     // ground from valley to upland, and steepness exposes rock. Between them
@@ -215,7 +230,17 @@ const TERRAIN_FRAG = /* glsl */ `
     vec3 high = uHighMountain * vBiome.x + uHighDesert * vBiome.y + uHighCountry * vBiome.z;
     vec3 rock = uRockMountain * vBiome.x + uRockDesert * vBiome.y + uRockCountry * vBiome.z;
     vec3 albedo = mix(low, high, height);
-    albedo = mix(albedo, rock, smoothstep(0.35, 0.72, steep));
+    float rockMask = smoothstep(0.35, 0.72, steep);
+    albedo = mix(albedo, rock, rockMask);
+
+    // World-space colour detail cannot stretch on a vertical cutting the way
+    // road-planar UVs do. Broad soil mottling keeps flat ground quiet; tighter
+    // height-biased strata appear only where the surface exposes rock.
+    float soil = terrainNoise(vWorld.xz * 0.055);
+    float rockNoise = terrainNoise(vWorld.xz * 0.115 + vWorld.y * 0.018);
+    float strata = sin(vWorld.y * 0.58 + rockNoise * 5.2) * 0.5 + 0.5;
+    albedo *= mix(0.95, 1.05, soil);
+    albedo *= mix(1.0, mix(0.84, 1.12, rockNoise * 0.68 + strata * 0.32), rockMask * 0.62);
     gl_FragColor = vec4(applyFog(lightSurface(albedo, faceNormal)), 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

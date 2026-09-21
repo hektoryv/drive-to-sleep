@@ -213,8 +213,12 @@ export const VEGETATION = {
 export const TERRAIN = {
   /** How far the terrain ribbon extends either side of the road, metres. */
   WIDTH_M: 360,
-  /** Lateral samples per station across that width. */
-  SAMPLES_ACROSS: 14,
+  /**
+   * Authored lateral samples for each side, metres from the centreline.
+   * Most vertices live in the first 50 m where individual rock faces can be
+   * seen; the far field keeps broad triangles where haze hides the spacing.
+   */
+  CROSS_SECTION_M: [6, 7.5, 9, 11, 14, 18, 23, 29, 37, 48, 62, 82, 108, 142, 188, 248, 308, 360],
   /** Fine relief laid over the authored large-scale landform, metres and scale. */
   RELIEF_M: 18,
   RELIEF_SCALE_M: 260,
@@ -240,10 +244,13 @@ export const LANDFORMS = {
   /** Where an engineered cutting or an exposed drop may begin. */
   BREAK_START_M: 8.5,
   /** Rising slopes develop more gradually than the near-sheer exposed edge. */
-  WALL_BLEND_M: 46,
+  WALL_FACE_ONE_BLEND_M: 11,
+  WALL_LEDGE_M: 6,
+  WALL_FACE_TWO_BLEND_M: 17,
   DROP_BLEND_M: 15,
-  /** Share of the final height established close to the road. */
-  WALL_NEAR_HEIGHT_SHARE: 0.27,
+  /** Shares of final wall height established by the two close rock faces. */
+  WALL_FACE_ONE_SHARE: 0.11,
+  WALL_FACE_TWO_SHARE: 0.16,
   DROP_NEAR_HEIGHT_SHARE: 0.76,
   /** Slow variation breaks a kilometre-long slope into shoulders and bowls. */
   MACRO_NOISE_SCALE_M: 390,
@@ -266,6 +273,14 @@ export const LANDFORMS = {
   SIDE_NOISE_MOUNTAIN_M: 22,
   SIDE_NOISE_DESERT_M: 15,
   SIDE_NOISE_COUNTRY_M: 9,
+  /** Short-scale displacement restricted to the close, rising rock side. */
+  CRAG_SCALE_ALONG_M: 26,
+  CRAG_SCALE_ACROSS_M: 18,
+  CRAG_FADE_START_M: 72,
+  CRAG_FADE_M: 58,
+  CRAG_MOUNTAIN_M: 4.2,
+  CRAG_DESERT_M: 3.4,
+  CRAG_COUNTRY_M: 1.8,
 } as const;
 
 /** Real 3D water surfaces placed in mountain and country lake shelves. */

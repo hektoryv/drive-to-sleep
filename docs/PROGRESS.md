@@ -1330,3 +1330,38 @@ or Edge on Windows when Playwright's exact managed browser revision is absent.
 
 **Not included:** tunnels, bridges, settlements and landmark buildings. They
 remain authored roadside events rather than being smuggled into terrain noise.
+
+---
+
+## 2026-09-21 — Environment detail gets a measurable budget
+
+**Built:** an always-visible compact performance meter, temporary roadside
+containment and a first close-terrain detail pass.
+
+- The top-left meter reports smoothed FPS/frame time, CPU simulation and render
+  submission time, cumulative draw calls/triangles across all three render
+  passes, quality tier and device pixel ratio. The full three-finger debug
+  overlay remains available underneath it.
+- Invisible walls follow the generated road exactly 2 m beyond each varying
+  tarmac edge. A collision projects position to the boundary and removes only
+  velocity pointing through it, preserving velocity along the wall.
+- Terrain now spends 18 lateral samples per side mostly within the first 50 m,
+  uses alternating triangle diagonals, and shapes rising sides as two close
+  rock faces separated by a ledge before the broad mountainside takes over.
+- Close rising terrain receives deterministic short-scale crag displacement.
+  The existing shader adds low-frequency soil variation and steeper world-space
+  rock strata without texture assets, UV seams or another draw call.
+
+**Why this route:** `BufferGeometry` keeps the terrain in one indexed dynamic
+mesh, while the renderer's own per-frame counters make the extra geometry
+visible immediately. World-space procedural detail is the low-risk first test;
+compressed bitmap/normal textures remain available later if a real device has
+both visual need and headroom.
+
+**Verified:** the 20-scene world matrix covers four seeds, all three biomes and
+dawn through night. Close mountain/desert sides now read as broken rock cuts;
+lake and open sides remain visually broad. Representative frames submit 41
+draws and 145–149k triangles. A 10-second SwiftShader stress run at 6.2 km
+measured 26.8 ms p50 and 30.6 ms p95 versus the previously documented 26.3 ms
+median; that difference is small enough that only the target phone should be
+used to decide the actual geometry budget.

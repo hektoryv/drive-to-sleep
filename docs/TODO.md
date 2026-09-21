@@ -13,6 +13,11 @@ is left of it is **calibration**, deferred by the owner and parked below.
 The build: **`github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk`**,
 rebuilt on every push (ADR-0015). Three fingers toggles the debug readout.
 
+- [x] Always-visible FPS/frame cost, draw-call and triangle readout for device tuning
+- [x] Temporary invisible roadside walls, 2 m beyond the changing tarmac edge
+- [x] Denser close terrain cross-section, authored rock-cut faces and procedural surface detail
+- [ ] Judge the new terrain cost and rock readability on the target phone
+
 - [ ] **Listen to it.** The engine note has never been heard by anybody. It is
       the one thing in the sound that is likely to be wrong, and the fix is
       `audio/tuning.ts` — most probably `ENGINE.CUTOFF_MAX_HZ` (brightness) and
