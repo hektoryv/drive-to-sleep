@@ -20,6 +20,12 @@ function resolveChromium(): string | undefined {
   const candidates = [
     process.env.CHROMIUM_PATH,
     `${process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers'}/chromium`,
+    // Local Windows development may have no Playwright-managed build after a
+    // package update, while the system browser is already present and fully
+    // compatible with the protocol Playwright uses.
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
   ];
   for (const c of candidates) {
     if (c !== undefined && c !== '' && existsSync(c)) return c;
