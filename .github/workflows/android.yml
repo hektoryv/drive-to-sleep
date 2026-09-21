@@ -20,6 +20,7 @@ on:
       - main
       - claude/android-driving-game-plan-pw5z30
       - codex/cockpit-reference-pass
+      - codex/environment-detail-pass
     paths-ignore:
       - 'docs/**'
       - '**/*.md'

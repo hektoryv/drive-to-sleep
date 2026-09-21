@@ -101,7 +101,9 @@ A task is done when all of:
 - no new allocation in the hot path,
 - `TODO.md` is updated,
 - any constants introduced are in `tuning.ts` with a comment,
-- it's committed with a message that says what changed.
+- it's committed with a message that says what changed,
+- and, when owner review requires playing it, GitHub has published an APK from
+  that exact commit and the release notes have been checked before handoff.
 
 ## Commands
 

@@ -71,6 +71,10 @@ The three shared files, and the only places that need coordination:
 - **Screenshots cannot judge motion.** Anything about feel, lean, latency or
   camera movement needs a capture or a real device. Don't sign off feel from a
   still. See ADR-0008.
+- **Playable changes are not ready for owner review until GitHub has published
+  an APK built from their exact commit.** Add an active review branch to the
+  Android workflow before asking for device feedback, push it, wait for the
+  workflow to complete, and verify the rolling release notes name that commit.
 
 ## Commands
 
@@ -81,4 +85,6 @@ npm run shoot    npm run perf      npx cap sync android   # phase 6+
 
 ## Branch
 
-Development happens on `claude/android-driving-game-plan-pw5z30`.
+Development happens on a short-lived review branch from `main`, then merges
+back after owner approval. Every active review branch must trigger the Android
+workflow so it produces an installable APK.
