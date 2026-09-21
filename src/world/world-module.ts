@@ -31,9 +31,11 @@ import { createSky, type Sky } from './view/sky.js';
 import { createVegetation, type Vegetation } from './view/vegetation.js';
 import { createNearProps, type NearProps } from './view/near-props.js';
 import { createRoadside, type Roadside } from './view/roadside.js';
+import { createWater, type Water } from './view/water.js';
 import {
   createRoadMaterial,
   createTerrainMaterial,
+  createWaterMaterial,
   createWorldUniforms,
   setSrgb,
   type WorldUniforms,
@@ -66,8 +68,10 @@ export function createWorldModule(): WorldModule {
   let vegetation: Vegetation | undefined;
   let nearProps: NearProps | undefined;
   let roadside: Roadside | undefined;
+  let water: Water | undefined;
   let roadMaterial: THREE.ShaderMaterial | undefined;
   let terrainMaterial: THREE.ShaderMaterial | undefined;
+  let waterMaterial: THREE.ShaderMaterial | undefined;
 
   let lastBuiltNextIndex = -Infinity;
   let builtCount = 0;
@@ -151,6 +155,7 @@ export function createWorldModule(): WorldModule {
 
     roadMesh.rebuild(stations, ox, oy, oz);
     terrainMesh.rebuild(stations, ox, oy, oz);
+    water?.rebuild(stations, ox, oy, oz);
     vegetation?.rebuild(stations, ox, oy, oz);
     nearProps?.rebuild(stations, ox, oy, oz);
     roadside?.rebuild(stations, ox, oy, oz);
@@ -176,9 +181,11 @@ export function createWorldModule(): WorldModule {
       uniforms = createWorldUniforms();
       roadMaterial = createRoadMaterial(uniforms);
       terrainMaterial = createTerrainMaterial(uniforms);
+      waterMaterial = createWaterMaterial(uniforms);
 
       roadMesh = createRoadMesh(roadMaterial, capacity);
       terrainMesh = createTerrainMesh(terrainMaterial, capacity);
+      water = createWater(waterMaterial, capacity);
       sky = createSky(uniforms);
       ridges = createRidges(uniforms);
       vegetation = createVegetation(uniforms, capacity);
@@ -189,6 +196,7 @@ export function createWorldModule(): WorldModule {
         sky.mesh,
         ridges.group,
         terrainMesh.mesh,
+        water.mesh,
         roadMesh.mesh,
         vegetation.mesh,
         nearProps.mesh,
@@ -217,7 +225,7 @@ export function createWorldModule(): WorldModule {
 
     frame(_alpha: number, view: Readonly<ViewState>) {
       sky?.follow(view.x, view.y, view.z);
-      ridges?.update(view.x, view.y, view.z);
+      ridges?.update(view.x, view.y, view.z, car?.distanceM ?? 0, ctx?.seed ?? 0);
       if (uniforms !== undefined) {
         uniforms.uFogBaseY.value = view.y + HEIGHT_FOG.BASE_ABOVE_ROAD_M;
       }
@@ -239,6 +247,7 @@ export function createWorldModule(): WorldModule {
     dispose() {
       roadMesh?.dispose();
       terrainMesh?.dispose();
+      water?.dispose();
       sky?.dispose();
       ridges?.dispose();
       vegetation?.dispose();
@@ -246,6 +255,7 @@ export function createWorldModule(): WorldModule {
       roadside?.dispose();
       roadMaterial?.dispose();
       terrainMaterial?.dispose();
+      waterMaterial?.dispose();
     },
   };
 }

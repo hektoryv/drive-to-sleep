@@ -12,7 +12,7 @@
  */
 
 import * as THREE from 'three';
-import { BIOMES, HEIGHT_FOG, ROAD, SKY } from '../tuning.js';
+import { BIOMES, HEIGHT_FOG, ROAD, SKY, WATER } from '../tuning.js';
 
 /**
  * Writes an authored palette colour into a THREE.Color.
@@ -207,13 +207,44 @@ const TERRAIN_FRAG = /* glsl */ `
     // Two cues, both cheap and both doing a lot of work: height tints the
     // ground from valley to upland, and steepness exposes rock. Between them
     // a single noise field reads as terrain rather than as a lumpy sheet.
+    vec3 faceNormal = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+    if (dot(faceNormal, vNormal) < 0.0) faceNormal = -faceNormal;
     float height = clamp(vWorld.y / 40.0 + 0.5, 0.0, 1.0);
-    float steep = 1.0 - clamp(normalize(vNormal).y, 0.0, 1.0);
+    float steep = 1.0 - clamp(faceNormal.y, 0.0, 1.0);
     vec3 low = uLowMountain * vBiome.x + uLowDesert * vBiome.y + uLowCountry * vBiome.z;
     vec3 high = uHighMountain * vBiome.x + uHighDesert * vBiome.y + uHighCountry * vBiome.z;
     vec3 rock = uRockMountain * vBiome.x + uRockDesert * vBiome.y + uRockCountry * vBiome.z;
     vec3 albedo = mix(low, high, height);
     albedo = mix(albedo, rock, smoothstep(0.35, 0.72, steep));
+    gl_FragColor = vec4(applyFog(lightSurface(albedo, faceNormal)), 1.0);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
+
+const WATER_VERT = /* glsl */ `
+  attribute float country;
+  varying float vCountry;
+  varying vec3 vWorld;
+  varying vec3 vNormal;
+
+  void main() {
+    vCountry = country;
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorld = world.xyz;
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+
+const WATER_FRAG = /* glsl */ `
+  uniform vec3 uMountainWater;
+  uniform vec3 uCountryWater;
+  varying float vCountry;
+  ${WORLD_COMMON_GLSL}
+
+  void main() {
+    vec3 albedo = mix(uMountainWater, uCountryWater, vCountry);
     gl_FragColor = vec4(applyFog(lightSurface(albedo, vNormal)), 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -259,6 +290,19 @@ export function createTerrainMaterial(shared: WorldUniforms): THREE.ShaderMateri
       uRockDesert: color(BIOMES.TERRAIN_ROCK[1]),
       uRockCountry: color(BIOMES.TERRAIN_ROCK[2]),
     },
+  });
+}
+
+export function createWaterMaterial(shared: WorldUniforms): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    vertexShader: WATER_VERT,
+    fragmentShader: WATER_FRAG,
+    uniforms: {
+      ...shared,
+      uMountainWater: color(WATER.MOUNTAIN_COLOR),
+      uCountryWater: color(WATER.COUNTRY_COLOR),
+    },
+    side: THREE.DoubleSide,
   });
 }
 

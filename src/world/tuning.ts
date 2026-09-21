@@ -45,6 +45,11 @@ export const ROAD = {
   GRADE_SCALE_M: 900,
   GRADE_AMPLITUDE: 0.075,
   GRADE_OCTAVES: 2,
+  /** Long climbs and descents underneath the ordinary undulation. */
+  GRADE_LONG_SCALE_M: 2600,
+  GRADE_LONG_AMPLITUDE: 0.032,
+  /** Hard safety limit. 0.14 is a fourteen-percent road grade. */
+  MAX_GRADE: 0.14,
 
   /** Road half-width, metres, and how much it varies. */
   HALF_WIDTH_M: 3.6,
@@ -207,18 +212,78 @@ export const VEGETATION = {
 
 export const TERRAIN = {
   /** How far the terrain ribbon extends either side of the road, metres. */
-  WIDTH_M: 260,
+  WIDTH_M: 360,
   /** Lateral samples per station across that width. */
-  SAMPLES_ACROSS: 10,
-  /** Height noise, metres and scale. */
-  RELIEF_M: 34,
-  RELIEF_SCALE_M: 420,
+  SAMPLES_ACROSS: 14,
+  /** Fine relief laid over the authored large-scale landform, metres and scale. */
+  RELIEF_M: 18,
+  RELIEF_SCALE_M: 260,
   /**
    * How far from the road the terrain is held flat before relief takes over.
    * Without this, hills push through the tarmac.
    */
-  FLAT_MARGIN_M: 14,
-  BLEND_M: 45,
+  FLAT_MARGIN_M: 7.5,
+  BLEND_M: 24,
+} as const;
+
+/**
+ * Kilometre-scale 3D compositions around the road.
+ *
+ * A feature cell fades to calm ground at both ends, so categorical scenes can
+ * change without a seam. Heights are deliberately much larger than the fine
+ * terrain noise: these values make a road sit on a mountainside rather than
+ * on a wrinkled sheet.
+ */
+export const LANDFORMS = {
+  CELL_M: 1320,
+  EDGE_BLEND_M: 190,
+  /** Where an engineered cutting or an exposed drop may begin. */
+  BREAK_START_M: 8.5,
+  /** Rising slopes develop more gradually than the near-sheer exposed edge. */
+  WALL_BLEND_M: 46,
+  DROP_BLEND_M: 15,
+  /** Share of the final height established close to the road. */
+  WALL_NEAR_HEIGHT_SHARE: 0.27,
+  DROP_NEAR_HEIGHT_SHARE: 0.76,
+  /** Slow variation breaks a kilometre-long slope into shoulders and bowls. */
+  MACRO_NOISE_SCALE_M: 390,
+  MACRO_VARIATION: 0.24,
+  /** Mountain scenes: open-side depth and closed-side wall height. */
+  MOUNTAIN_DROP_M: 92,
+  MOUNTAIN_WALL_M: 122,
+  MOUNTAIN_PASS_WALL_M: 92,
+  /** Desert scenes substitute canyon walls and basins for water. */
+  DESERT_DROP_M: 54,
+  DESERT_WALL_M: 92,
+  /** Country keeps the same compositions at a gentler scale. */
+  COUNTRY_DROP_M: 36,
+  COUNTRY_WALL_M: 54,
+  /** Fraction of feature cells that are lake shelves in eligible biomes. */
+  MOUNTAIN_LAKE_CHANCE: 0.46,
+  COUNTRY_LAKE_CHANCE: 0.28,
+  /** Independent small relief on the two sides avoids mirrored terrain. */
+  SIDE_NOISE_SCALE_M: 145,
+  SIDE_NOISE_MOUNTAIN_M: 22,
+  SIDE_NOISE_DESERT_M: 15,
+  SIDE_NOISE_COUNTRY_M: 9,
+} as const;
+
+/** Real 3D water surfaces placed in mountain and country lake shelves. */
+export const WATER = {
+  /** Below this fade weight the surface is fully buried and emits no triangles. */
+  ACTIVE_EPSILON: 0.015,
+  /** Shore begins well outside the maintained verge and guardrail. */
+  SHORE_M: 46,
+  /** Stop just inside the terrain ribbon edge to hide the rectangular boundary. */
+  OUTER_MARGIN_M: 8,
+  /** Water plane below the lowest road station in its landscape cell. */
+  BELOW_LOW_ROAD_M: 16,
+  /** Lake floor is forced this far under the water so it cannot poke through. */
+  FLOOR_CLEARANCE_M: 12,
+  /** Sink feature ends below the terrain instead of ending in a hard cross-edge. */
+  EDGE_SINK_M: 26,
+  MOUNTAIN_COLOR: 0x365f78,
+  COUNTRY_COLOR: 0x456f71,
 } as const;
 
 /**
@@ -305,6 +370,8 @@ export const RIDGES = {
    */
   HEIGHT_NEAR_M: 420,
   HEIGHT_FAR_M: 1500,
+  /** Relative silhouette height in mountain, desert and country regions. */
+  BIOME_HEIGHT: [1.0, 0.54, 0.3] as const,
   /**
    * Metres per noise unit. Has to be well under the layer radius or the whole
    * ring falls inside one noise period and the range comes out as a single

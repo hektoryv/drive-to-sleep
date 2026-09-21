@@ -132,6 +132,8 @@ Things to resolve before the phase that needs them:
 - [x] Full-frame grade: restrained bloom, vignette, contrast, saturation and grain
 - [x] Low, balanced and high GPU quality tiers
 - [x] 20-scene review sheet across four seeds, five distances and the full day
+- [x] Asymmetric 3D landscape cells: lake shelves, rock walls, valleys and desert canyons
+- [x] Biome-specific distant silhouettes and a named 14% maximum road grade
 
 </details>
 

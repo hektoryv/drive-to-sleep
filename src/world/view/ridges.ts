@@ -25,6 +25,11 @@ import * as THREE from 'three';
 import { clamp } from '../../core/math.js';
 import { fbm2, gradNoise2 } from '../../core/rng.js';
 import { RIDGES } from '../tuning.js';
+import {
+  biomeWeightsAt,
+  makeBiomeWeights,
+  type BiomeWeights,
+} from '../gen/biomes.js';
 import type { WorldUniforms } from './materials.js';
 
 const RIDGE_VERT = /* glsl */ `
@@ -66,7 +71,13 @@ const RIDGE_FRAG = /* glsl */ `
 export interface Ridges {
   readonly group: THREE.Group;
   /** Rebuilds if the camera has moved far enough to matter. */
-  update(cameraX: number, cameraY: number, cameraZ: number): void;
+  update(
+    cameraX: number,
+    cameraY: number,
+    cameraZ: number,
+    distanceM: number,
+    worldSeed: number,
+  ): void;
   apply(nearColor: THREE.Color, farColor: THREE.Color): void;
   dispose(): void;
 }
@@ -93,26 +104,67 @@ interface Layer {
  * Ridged rather than plain fbm: mountains have sharp crests and soft valleys,
  * and symmetric noise gives rounded lumps that read as hills.
  */
-function ridgeHeight(x: number, z: number, seed: number, scale: number): number {
+function ridgeHeight(
+  x: number,
+  z: number,
+  seed: number,
+  scale: number,
+  biome: Readonly<BiomeWeights>,
+): number {
   const u = x / scale;
   const v = z / scale;
+  let height = 0;
 
-  let crest = 0;
-  let amp = 1;
-  let freq = 1;
-  let norm = 0;
-  for (let o = 0; o < 4; o++) {
-    crest += (1 - Math.abs(gradNoise2(u * freq, v * freq, seed + o * 613))) * amp;
-    norm += amp;
-    amp *= 0.5;
-    freq *= 2.1;
+  if (biome.mountain > 0) {
+    let crest = 0;
+    let amp = 1;
+    let freq = 1;
+    let norm = 0;
+    for (let o = 0; o < 4; o++) {
+      crest += (1 - Math.abs(gradNoise2(u * freq, v * freq, seed + o * 613))) * amp;
+      norm += amp;
+      amp *= 0.5;
+      freq *= 2.1;
+    }
+    crest = norm > 0 ? crest / norm : 0;
+
+    // A slow undulation lets whole stretches of the range rise and fall.
+    const massif = fbm2(u * 0.18, v * 0.18, seed + 991, {
+      octaves: 2,
+      lacunarity: 2,
+      gain: 0.5,
+    });
+    const mountain = clamp(crest * 0.85 + massif * 0.35 - 0.12, 0.03, 1.5);
+    height += mountain * biome.mountain * RIDGES.BIOME_HEIGHT[0];
   }
-  crest = norm > 0 ? crest / norm : 0;
 
-  // A slow undulation so whole stretches of the range rise and fall, rather
-  // than every peak reaching the same height.
-  const massif = fbm2(u * 0.18, v * 0.18, seed + 991, { octaves: 2, lacunarity: 2, gain: 0.5 });
-  return clamp(crest * 0.85 + massif * 0.35 - 0.12, 0.03, 1.5);
+  if (biome.desert > 0) {
+    // Broad stepped crowns read as mesas rather than alpine peaks.
+    const desertMass = fbm2(u * 0.34, v * 0.34, seed + 1877, {
+      octaves: 3,
+      lacunarity: 2,
+      gain: 0.46,
+    });
+    const desert = clamp(
+      Math.floor(clamp(desertMass * 0.85 + 0.58, 0.08, 1.1) * 5) / 5,
+      0.06,
+      1.1,
+    );
+    height += desert * biome.desert * RIDGES.BIOME_HEIGHT[1];
+  }
+
+  if (biome.country > 0) {
+    // Country uses only the slow field: overlapping hills, no serrated crest.
+    const countryMass = fbm2(u * 0.2, v * 0.2, seed + 3253, {
+      octaves: 2,
+      lacunarity: 2,
+      gain: 0.42,
+    });
+    const country = clamp(countryMass * 0.45 + 0.42, 0.05, 0.82);
+    height += country * biome.country * RIDGES.BIOME_HEIGHT[2];
+  }
+
+  return height;
 }
 
 export function createRidges(shared: WorldUniforms): Ridges {
@@ -146,6 +198,7 @@ export function createRidges(shared: WorldUniforms): Ridges {
 
   const layers: Layer[] = [];
   const columns = RIDGES.COLUMNS;
+  const biome = makeBiomeWeights();
 
   for (let i = 0; i < RIDGES.LAYERS; i++) {
     const depth = RIDGES.LAYERS > 1 ? i / (RIDGES.LAYERS - 1) : 0;
@@ -184,7 +237,14 @@ export function createRidges(shared: WorldUniforms): Ridges {
     layers.push({ mesh, positions, attr, radius, depth, seed: 4200 + i * 977, heightM });
   }
 
-  function rebuild(cameraX: number, cameraY: number, cameraZ: number): void {
+  function rebuild(
+    cameraX: number,
+    cameraY: number,
+    cameraZ: number,
+    distanceM: number,
+    worldSeed: number,
+  ): void {
+    biomeWeightsAt(distanceM, worldSeed, biome);
     for (const layer of layers) {
       const { positions, radius, heightM, seed } = layer;
       for (let c = 0; c <= columns; c++) {
@@ -194,7 +254,7 @@ export function createRidges(shared: WorldUniforms): Ridges {
         // The world point this bearing aims at — the source of the parallax.
         const wx = cameraX + dx * radius;
         const wz = cameraZ + dz * radius;
-        const h = ridgeHeight(wx, wz, seed, RIDGES.SCALE_M) * heightM;
+        const h = ridgeHeight(wx, wz, seed + worldSeed * 101, RIDGES.SCALE_M, biome) * heightM;
 
         const top = c * 2;
         const bottom = top + 1;
@@ -217,13 +277,13 @@ export function createRidges(shared: WorldUniforms): Ridges {
   return {
     group,
 
-    update(cameraX, cameraY, cameraZ) {
+    update(cameraX, cameraY, cameraZ, distanceM, worldSeed) {
       // Rebuilt every frame. An earlier version only re-sampled after the
       // camera had moved a few metres, which is the obvious optimisation and
       // was also a bug: the staleness test let the curtain stop updating
       // entirely, and four invisible layers are not cheaper than four visible
       // ones. It is ~1,500 vertices of 1D noise — measure before optimising.
-      rebuild(cameraX, cameraY, cameraZ);
+      rebuild(cameraX, cameraY, cameraZ, distanceM, worldSeed);
     },
 
     apply(nearColor, farColor) {

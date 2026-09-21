@@ -1286,3 +1286,47 @@ to `sim/` and is visible independently of the three-finger debug panel.
 road and cockpit; typecheck, architectural lint and all 221 tests pass.
 
 **Next:** build and device check, then Phase 5 traffic.
+
+---
+
+## 2026-09-21 — The road sits inside a landscape, not on a ribbon
+
+**Built:** an asymmetric 3D landscape grammar on top of the existing pure
+road-coordinate terrain.
+
+- Deterministic 1.32 km composition cells now choose exposed shelves, lake
+  valleys, rock passes, rolling country valleys and desert canyons. Each cell
+  fades to calm ground at its ends, while its left and right sides are authored
+  independently.
+- Mountain and country lake cells contain real 3D water below the road. The
+  exposed side drops behind the existing terrain-driven guardrail; the opposite
+  side rises into a middle-distance 3D mountainside. Desert uses dry basins and
+  mesas instead.
+- The far ridge layers now morph from tall serrated mountain massifs to stepped
+  desert mesas and low country hills using the same biome weights as the rest
+  of the world.
+- Road elevation gained a 2.6 km underlying grade field, and `ROAD.MAX_GRADE`
+  now hard-caps every generated road at 14%. The shorter undulation and authored
+  crest/dip events remain on top.
+- Terrain cross-resolution rose from 10 to 14 samples per side and the ribbon
+  from 260 m to 360 m. Terrain lighting now uses triangle normals so the larger
+  slopes read as faceted low-poly forms rather than smooth ramps.
+
+**Visual iteration:** the first contact sheet proved that real elevation alone
+was insufficient: establishing 68% of a 138 m wall within 18 m of the verge
+made giant triangular screens. The final profile establishes 27% of a 122 m
+mountain wall over 46 m while retaining a fast 15 m exposed-edge drop. Exact
+feature-centre shots show the intended lake/guardrail/mountainside composition;
+the final 20-scene matrix covers four seeds, all three biomes and the full day.
+
+**Verified:** production build, architectural lint, typecheck and 225 tests.
+The 10-second SwiftShader lake stress scene measured 26.3 ms p50, 31.3 ms p95
+and 0.071 ms of simulation per frame. The previously documented Phase 3 median
+was ~24.9 ms; only a real phone can decide whether the added vertices and water
+draw call require a lower quality-tier reduction.
+
+**Tooling repair:** the screenshot harness now falls back to installed Chrome
+or Edge on Windows when Playwright's exact managed browser revision is absent.
+
+**Not included:** tunnels, bridges, settlements and landmark buildings. They
+remain authored roadside events rather than being smuggled into terrain noise.

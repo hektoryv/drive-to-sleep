@@ -17,6 +17,7 @@ import { curvatureFromEvents, gradeFromEvents, straightnessAt } from './events.j
 /** Seed offsets, so the three fields never correlate with one another. */
 const SEED_CURVATURE = 0;
 const SEED_GRADE = 7919;
+const SEED_GRADE_LONG = 11939;
 const SEED_WIDTH = 15731;
 
 const CURVATURE_FBM: FbmOptions = {
@@ -54,7 +55,16 @@ function shapeNoise(n: number): number {
 /** Rise over run at distance `s`. Positive climbs. */
 export function gradeAt(s: number, seed: number): number {
   const noise = fbm1(s / ROAD.GRADE_SCALE_M, seed + SEED_GRADE, GRADE_FBM);
-  return noise * ROAD.GRADE_AMPLITUDE + gradeFromEvents(s, seed);
+  const long = fbm1(s / ROAD.GRADE_LONG_SCALE_M, seed + SEED_GRADE_LONG, {
+    octaves: 2,
+    lacunarity: 2,
+    gain: 0.42,
+  });
+  const raw =
+    noise * ROAD.GRADE_AMPLITUDE +
+    long * ROAD.GRADE_LONG_AMPLITUDE +
+    gradeFromEvents(s, seed);
+  return clamp(raw, -ROAD.MAX_GRADE, ROAD.MAX_GRADE);
 }
 
 /**

@@ -28,3 +28,4 @@ supersedes the old one, so the reasoning trail stays intact.
 | [0020](ADR-0020-postpone-final-cockpit.md) | Restore the procedural 3D cabin and postpone final cockpit art | Accepted (supersedes 0018–0019 as the active implementation) |
 | [0021](ADR-0021-distance-biome-blending.md) | Biomes are deterministic distance cells blended as shared weights | Accepted |
 | [0022](ADR-0022-combined-post-stack.md) | Post-process the combined world and cockpit once, with renderer quality tiers | Accepted |
+| [0023](ADR-0023-asymmetric-3d-landscape-cells.md) | Near landscapes are asymmetric 3D composition cells | Accepted |
