@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      One screen, no chrome. There is no action bar, no title, no light
+      variant, and the window background is the cabin black rather than the
+      platform default, so nothing the system draws for us can appear at the
+      edges of a fullscreen GL canvas.
+    -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/cabin</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="AppTheme" />
+
+    <!--
+      The launch theme, shown between tapping the icon and the WebView's first
+      paint. A solid colour rather than the template's splash image: this is a
+      game that opens on a dark road, and anything else is a flash of someone
+      else's branding.
+    -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cabin</item>
+        <item name="android:background">@color/cabin</item>
+        <item name="android:windowBackground">@color/cabin</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

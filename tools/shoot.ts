@@ -14,7 +14,7 @@
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import {
   DEFAULT_DEVICE,
   parseArgs,
@@ -35,6 +35,8 @@ const debug = args.get('debug') === 'true' || args.get('debug') === '1';
 const sheet = args.get('sheet') === 'true';
 const compare = args.get('compare') === 'true';
 const sequence = args.get('sequence') === 'true';
+const handling = args.get('handling') === 'true';
+const world = args.get('world') === 'true';
 
 function optionalNumber(key: string): number | undefined {
   const raw = args.get(key);
@@ -43,14 +45,37 @@ function optionalNumber(key: string): number | undefined {
   return Number.isFinite(v) ? v : undefined;
 }
 
-/** The matrix a contact sheet covers. Widens as the phases land. */
-const SHEET_MATRIX: ShotState[] = [
-  { seed: 1, at: 0, time: 'day', debug: false },
-  { seed: 1, at: 500, time: 'day', debug: false },
-  { seed: 7, at: 1200, time: 'dusk', debug: false },
-  { seed: 7, at: 1200, time: 'night', debug: false },
-  { seed: 3, at: 5000, time: 'day', debug: true },
-  { seed: 3, at: 5000, time: 'dusk', debug: true },
+/**
+ * The day, at one place. The sky carries most of the mood in this game
+ * (ADR-0007), so the sheet that matters most is the same view at every hour —
+ * it shows whether the palette keyframes actually join up.
+ */
+const SHEET_MATRIX: ShotState[] = (
+  ['predawn', 'dawn', 'morning', 'noon', 'afternoon', 'golden', 'sunset', 'dusk', 'twilight', 'night'] as const
+).map((time) => ({ seed: 1, at: 1400, time, debug: false, label: time }));
+
+/** Phase 3 review: several generated regions, seeds and lighting conditions. */
+const WORLD_MATRIX: ShotState[] = [
+  { seed: 1, at: 900, time: 'dawn', debug: false, label: 's1 0.9km dawn' },
+  { seed: 1, at: 3400, time: 'noon', debug: false, label: 's1 3.4km noon' },
+  { seed: 1, at: 5900, time: 'golden', debug: false, label: 's1 5.9km golden' },
+  { seed: 1, at: 8500, time: 'dusk', debug: false, label: 's1 8.5km dusk' },
+  { seed: 1, at: 11300, time: 'night', debug: false, label: 's1 11.3km night' },
+  { seed: 2, at: 1200, time: 'noon', debug: false, label: 's2 1.2km noon' },
+  { seed: 2, at: 3900, time: 'golden', debug: false, label: 's2 3.9km golden' },
+  { seed: 2, at: 6100, time: 'sunset', debug: false, label: 's2 6.1km sunset' },
+  { seed: 2, at: 8800, time: 'twilight', debug: false, label: 's2 8.8km twilight' },
+  { seed: 2, at: 11600, time: 'dawn', debug: false, label: 's2 11.6km dawn' },
+  { seed: 7, at: 700, time: 'night', debug: false, label: 's7 0.7km night' },
+  { seed: 7, at: 3100, time: 'morning', debug: false, label: 's7 3.1km morning' },
+  { seed: 7, at: 5700, time: 'afternoon', debug: false, label: 's7 5.7km afternoon' },
+  { seed: 7, at: 8200, time: 'golden', debug: false, label: 's7 8.2km golden' },
+  { seed: 7, at: 11000, time: 'dusk', debug: false, label: 's7 11km dusk' },
+  { seed: 11, at: 1500, time: 'golden', debug: false, label: 's11 1.5km golden' },
+  { seed: 11, at: 4200, time: 'dusk', debug: false, label: 's11 4.2km dusk' },
+  { seed: 11, at: 6600, time: 'night', debug: false, label: 's11 6.6km night' },
+  { seed: 11, at: 9300, time: 'dawn', debug: false, label: 's11 9.3km dawn' },
+  { seed: 11, at: 12100, time: 'noon', debug: false, label: 's11 12.1km noon' },
 ];
 
 /**
@@ -85,7 +110,7 @@ function sequenceMatrix(): ShotState[] {
     out.push({
       seed: Number(args.get('seed') ?? 1),
       at,
-      time: (args.get('time') ?? 'day') as ShotState['time'],
+      time: args.get('time') ?? 'golden',
       debug,
       look,
       label: `${at}m${look ? '' : ' no-look'}`,
@@ -93,6 +118,24 @@ function sequenceMatrix(): ShotState[] {
   }
   return out;
 }
+
+/**
+ * The car doing things, rather than the road being looked at.
+ *
+ * Each shot drives to the same point and then holds a fixed input for a couple
+ * of seconds, so the body is caught where the physics put it. It is the only
+ * way a still shows anything about Phase 2 at all — and even then it shows
+ * where the lean ended up, never how it got there (ADR-0008).
+ */
+const HANDLING_MATRIX: ShotState[] = [
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0, throttle: 0.6, brake: 0 }, holdS: 2, label: 'level (straight)' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'turning right' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: -0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'turning left' },
+  { seed: 1, at: 900, time: 'day', debug: true, hold: { steer: 0, throttle: 0, brake: 1 }, holdS: 1, label: 'braking (dive)' },
+  { seed: 1, at: 900, time: 'day', debug: false, cam: 'chase', hold: { steer: 0, throttle: 0.6, brake: 0 }, holdS: 2, label: 'chase level' },
+  { seed: 1, at: 900, time: 'day', debug: false, cam: 'chase', hold: { steer: 0.45, throttle: 0.6, brake: 0 }, holdS: 1.4, label: 'chase turning right' },
+  { seed: 1, at: 900, time: 'day', debug: true, cam: 'chase', hold: { steer: 1, throttle: 1, brake: 0 }, holdS: 4, label: 'chase off-road' },
+];
 
 let shotIndex = 0;
 
@@ -114,7 +157,7 @@ async function main(): Promise<void> {
   const single: ShotState = {
     seed: Number(args.get('seed') ?? 1),
     at: Number(args.get('at') ?? 0),
-    time: (args.get('time') ?? 'day') as ShotState['time'],
+    time: args.get('time') ?? 'golden',
     debug,
   };
   const fov = optionalNumber('fov');
@@ -125,13 +168,17 @@ async function main(): Promise<void> {
   if (dash !== undefined) single.dash = dash;
   if (args.get('look') === '0') single.look = false;
 
-  const shots: ShotState[] = sequence
-    ? sequenceMatrix()
-    : compare
-      ? COMPARE_MATRIX
-      : sheet
-        ? SHEET_MATRIX
-        : [single];
+  const shots: ShotState[] = handling
+    ? HANDLING_MATRIX
+    : world
+      ? WORLD_MATRIX
+    : sequence
+      ? sequenceMatrix()
+      : compare
+        ? COMPARE_MATRIX
+        : sheet
+          ? SHEET_MATRIX
+          : [single];
 
   const harness = await startHarness();
   const written: string[] = [];
@@ -153,7 +200,7 @@ async function main(): Promise<void> {
       );
     }
 
-    if (sheet || compare || sequence) {
+    if (sheet || world || compare || sequence || handling) {
       const sheetFile = await buildContactSheet(harness, written, device);
       console.log(`\ncontact sheet: ${sheetFile}`);
     }
@@ -179,7 +226,7 @@ async function buildContactSheet(
   const thumbH = Math.round((device.height / device.width) * thumbW);
   const cells = files
     .map((f) => {
-      const name = f.split('/').pop() ?? f;
+      const name = basename(f);
       return `<figure><img src="file://${f}" width="${thumbW}" height="${thumbH}"><figcaption>${name}</figcaption></figure>`;
     })
     .join('\n');

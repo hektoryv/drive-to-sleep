@@ -40,6 +40,17 @@ export function computeFraming(
   const vFov = 2 * Math.atan(Math.tan(hFov / 2) / apertureAspect);
   const horizonPitch = Math.atan((2 * horizonY - 1) * Math.tan(vFov / 2));
 
+  // The cockpit's frustum encloses the whole display but stays centred on the
+  // aperture, so that it shares a centre line and an angular scale with the
+  // world camera. A symmetric frustum centred on the aperture's middle has to
+  // reach whichever display edge is further away, and the display is then a
+  // window inside it.
+  const apertureCentreY = headerH + apertureH / 2;
+  const reach = Math.max(apertureCentreY, height - apertureCentreY);
+  const fullHeight = Math.max(1, reach * 2);
+  const cockpitVFov =
+    apertureH > 0 ? 2 * Math.atan(Math.tan(vFov / 2) * (fullHeight / apertureH)) : vFov;
+
   return {
     width,
     height,
@@ -51,6 +62,12 @@ export function computeFraming(
     apertureAspect,
     vFov,
     horizonPitch,
+    cockpit: {
+      vFov: cockpitVFov,
+      aspect: width / fullHeight,
+      fullHeight,
+      offsetY: reach - apertureCentreY,
+    },
   };
 }
 

@@ -1,6 +1,6 @@
 # 05 — Conventions
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
 The point of this file is that a session six weeks from now can pick the
 project up without guessing.
@@ -33,6 +33,8 @@ directions at once (ADR-0011). Each domain owns its own:
 | `src/world/tuning.ts` | road, events, terrain, time of day |
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
+| `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
+| `src/cockpit/tuning.ts` | cabin geometry, instruments, colours, lighting |
 
 Because: tuning is iterative, tuning happens in a feedback loop with you
 looking at screenshots, and a constant buried on line 214 of `vehicle.ts` is a
@@ -65,7 +67,7 @@ inside one domain, and ADR-0011 for why it is shaped this way.
 
 `<area>: <what changed>` — e.g. `sim: add roll spring to attitude model`.
 
-Areas: `core`, `input`, `sim`, `world`, `render`, `cockpit`, `ui`, `fx`,
+Areas: `core`, `input`, `sim`, `world`, `render`, `cockpit`, `ui`, `fx`, `audio`,
 `tools`, `docs`, `build`, `android`.
 
 One logical change per commit. A commit that touches a phase's checklist

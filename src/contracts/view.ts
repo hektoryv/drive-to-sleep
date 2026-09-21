@@ -10,6 +10,19 @@ export interface Rect {
   h: number;
 }
 
+/**
+ * Scene layer the cockpit draws on.
+ *
+ * The world is scissored to the aperture band and nothing else, which is most
+ * of how the frame budget is met — the GPU never shades the half of a portrait
+ * phone the car covers. The cockpit has to be drawn *outside* that band, so it
+ * is a second pass with its own frustum, and the two are told apart by layer.
+ *
+ * Here rather than in `render/` because the cockpit has to put itself on this
+ * layer and the two domains may not import one another (ADR-0011).
+ */
+export const COCKPIT_LAYER = 1;
+
 /** Per-run overrides for the authored framing constants, used by tuning sweeps. */
 export interface FramingOverrides {
   headerFraction?: number;
@@ -39,15 +52,51 @@ export interface Framing {
   vFov: number;
   /** Camera pitch that puts the horizon at the authored height in the aperture. */
   horizonPitch: number;
+
+  /**
+   * The cockpit's frustum, which covers the whole display rather than the
+   * aperture, and is *centred on the aperture* rather than on the screen.
+   *
+   * Both cameras then share one rotation and one angular scale, so a point
+   * in the cabin lands where the same point in the world would. Get this
+   * wrong and the dash sits at a different horizon from the road.
+   */
+  cockpit: {
+    /** Vertical FOV of the enclosing frustum, radians. */
+    vFov: number;
+    /** Aspect of that frustum. */
+    aspect: number;
+    /** Frustum height in pixels — `setViewOffset`'s fullHeight. */
+    fullHeight: number;
+    /** Where the display's top edge sits inside it — `setViewOffset`'s y. */
+    offsetY: number;
+  };
 }
 
 /** Where the driver's eye is and how the body is sitting, this frame. */
 export interface ViewState {
-  /** Eye position in world space, metres. */
+  /**
+   * The **car's** position in world space, metres. Not the eye — the comment
+   * here used to say eye, and it was wrong: `render/` offsets from this by the
+   * seat position, and `y` is the road surface under the car rather than any
+   * height a head is at.
+   */
   x: number;
   z: number;
-  /** Height of the road surface under the car. Eye height is added on top. */
   y: number;
+
+  /**
+   * The driver's eye in world space — seat offset, eye height and heave all
+   * applied. Written by `render/`, which owns the camera and therefore owns
+   * the answer.
+   *
+   * Exposed because the cabin has to sit exactly where the camera is, and the
+   * alternative was two domains each holding their own copy of the seat
+   * position. Two copies of a constant that must agree is one copy too many.
+   */
+  eyeX: number;
+  eyeY: number;
+  eyeZ: number;
   /** Heading in radians, 0 looking down -Z. Where the *car* points. */
   heading: number;
   /**
@@ -64,5 +113,17 @@ export interface ViewState {
 }
 
 export function makeViewState(): ViewState {
-  return { x: 0, y: 0, z: 0, heading: 0, lookYaw: 0, roll: 0, pitch: 0, heaveY: 0 };
+  return {
+    x: 0,
+    y: 0,
+    z: 0,
+    eyeX: 0,
+    eyeY: 0,
+    eyeZ: 0,
+    heading: 0,
+    lookYaw: 0,
+    roll: 0,
+    pitch: 0,
+    heaveY: 0,
+  };
 }

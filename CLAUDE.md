@@ -7,7 +7,7 @@ we are; [docs/TODO.md](docs/TODO.md) says what's next.
 ## What this project is
 
 An endless, calm, portrait-orientation driving game for Android. One finger
-steers and controls gas/brake. No sound. The player sits in a 1970s
+steers and controls gas/brake. The player sits in a 1970s
 911-style cockpit driving a procedurally generated road that blends between
 mountain, desert and country as the sun cycles.
 
@@ -25,7 +25,10 @@ Full context: [docs/00-vision.md](docs/00-vision.md).
 4. **No allocation in the hot path.** Pre-allocate, pool, write in place.
 5. **Every feel/look constant lives in its domain's `tuning.ts`**, with a
    comment saying which direction makes it more of something. Never inline.
-6. **No audio, ever.** It's a design decision, not an omission.
+6. **Sound is the car and the air, and nothing else.** No music, no
+   interface clicks, no samples — everything is synthesised from the car's
+   own state (ADR-0016). The game must still be completely legible with the
+   phone muted: sound adds to the feedback, it never carries it alone.
 7. **No badges, marques or model names on the car.** It's "a 70s sports car".
 8. **No network, no analytics, no ads, no IAP, no permissions.**
 

@@ -10,6 +10,7 @@
 
 import type { RoadQuery, RoadSample, Surface } from '../../contracts/world.js';
 import { ROAD } from '../tuning.js';
+import { terrainHeightAt } from './terrain.js';
 import {
   createStations,
   ensureUpTo,
@@ -57,6 +58,16 @@ export function createRoad(seed: number): WorldRoad {
       if (distance <= halfWidth) return 'tarmac';
       if (distance <= halfWidth + ROAD.SHOULDER_M) return 'gravel';
       return 'grass';
+    },
+
+    groundHeightAt(s: number, t: number): number {
+      const sample = sampleAt(stations, s, scratchSample);
+      const edge = sample.halfWidth + ROAD.SHOULDER_M;
+      if (Math.abs(t) <= edge) {
+        // On the carriageway: the surface is the banked road plane.
+        return sample.y - t * Math.sin(sample.bank);
+      }
+      return terrainHeightAt(s, t, sample.y, seed);
     },
 
     toRoadSpace(x: number, z: number, nearS: number, out: { s: number; t: number }): void {

@@ -5,6 +5,7 @@
 import { createApp } from './app/app.js';
 import { installTestApi } from './app/test-api.js';
 import type { FramingOverrides } from './contracts/view.js';
+import { qualityTier } from './render/tuning.js';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement | null;
 const overlay = document.getElementById('overlay');
@@ -16,7 +17,18 @@ if (canvas === null || overlay === null) {
 // Query parameters exist for the screenshot harness. They are not a feature.
 const params = new URLSearchParams(location.search);
 const seed = Number(params.get('seed') ?? '1') || 1;
-const debugVisible = params.get('debug') !== '0';
+/**
+ * Whether we are inside the Android app rather than a browser. Capacitor's
+ * native bridge injects this global before the page script runs, so asking
+ * costs nothing and pulls no Capacitor code into the bundle.
+ */
+const nativeApp = 'Capacitor' in window;
+
+// The debug panel is on by default in a browser — the dev server and every
+// screenshot want it — and off by default in the installed app, where there is
+// no URL to switch it off with and it sits on top of the sky.
+const debugParam = params.get('debug');
+const debugVisible = debugParam === null ? !nativeApp : debugParam !== '0';
 
 /**
  * Framing overrides from the URL, so a sweep across several settings can be
@@ -49,6 +61,7 @@ const app = createApp({
   overlayRoot: overlay,
   seed,
   framing: framingFromParams(),
+  quality: qualityTier(params.get('quality')),
 });
 app.setDebugVisible(debugVisible);
 
@@ -64,6 +77,28 @@ function applySize(): void {
 applySize();
 window.addEventListener('resize', applySize);
 window.visualViewport?.addEventListener('resize', applySize);
+
+// Three fingers anywhere toggles the debug panel. On the phone this is the
+// only way to see the frame rate, and since driving takes exactly one finger,
+// a third pointer is never an accident. Registered here rather than in a
+// module: the overlay is development tooling that belongs to no domain, and
+// main.ts already owns the window-level listeners (docs/06-modules.md).
+let debugOn = debugVisible;
+const pointersDown = new Set<number>();
+
+window.addEventListener('pointerdown', (event) => {
+  pointersDown.add(event.pointerId);
+  if (pointersDown.size === 3) {
+    debugOn = !debugOn;
+    app.setDebugVisible(debugOn);
+  }
+});
+
+function releasePointer(event: PointerEvent): void {
+  pointersDown.delete(event.pointerId);
+}
+window.addEventListener('pointerup', releasePointer);
+window.addEventListener('pointercancel', releasePointer);
 
 // Stop simulating while backgrounded. Without this, returning to the app
 // delivers one enormous frame delta and the loop spends its sub-step budget
@@ -85,5 +120,32 @@ const ready = new Promise<void>((resolve) => {
 
 const api = installTestApi(app, ready);
 if (params.get('look') === '0') api.setLookAheadEnabled(false);
+if (params.get('cam') === 'chase') api.setCameraMode('chase');
+
+/** Named moments, so a URL can say `?time=golden` instead of `?time=0.76`. */
+const MOMENTS: Record<string, number> = {
+  midnight: 0.0,
+  predawn: 0.19,
+  dawn: 0.25,
+  morning: 0.34,
+  noon: 0.5,
+  afternoon: 0.66,
+  /** Sun ~2° up: the art target's moment. */
+  golden: 0.735,
+  /** Sun exactly on the horizon. */
+  sunset: 0.75,
+  dusk: 0.79,
+  twilight: 0.86,
+  night: 0.95,
+  // Phase 0's three moods, kept so old commands still mean something.
+  day: 0.5,
+};
+const timeParam = params.get('time');
+if (timeParam !== null) {
+  const named = MOMENTS[timeParam];
+  const phase = named ?? Number(timeParam);
+  if (Number.isFinite(phase)) api.setTime(phase);
+}
+if (params.get('auto') === '1') api.setAutopilot(true);
 
 app.start();

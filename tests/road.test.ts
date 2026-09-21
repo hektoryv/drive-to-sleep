@@ -56,7 +56,7 @@ describe('road fields', () => {
 
   it('keep grade within something a car can climb', () => {
     for (let s = 0; s < 40000; s += 3) {
-      expect(Math.abs(gradeAt(s, SEED))).toBeLessThan(0.25);
+      expect(Math.abs(gradeAt(s, SEED))).toBeLessThanOrEqual(ROAD.MAX_GRADE);
     }
   });
 

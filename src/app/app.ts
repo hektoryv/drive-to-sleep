@@ -15,10 +15,12 @@ import { createLoop, type Loop } from '../core/loop.js';
 import { createEventBus, type EventBus } from '../core/events.js';
 import { createServiceRegistry } from '../contracts/services.js';
 import type { GameEventMap } from '../contracts/events.js';
+import type { CarView } from '../contracts/vehicle.js';
 import type { FramingOverrides, ViewState } from '../contracts/view.js';
 import { makeViewState } from '../contracts/view.js';
 import { SIM } from '../sim/tuning.js';
-import { createRenderer, type Renderer } from '../render/renderer.js';
+import { createRenderer, type CameraMode, type Renderer } from '../render/renderer.js';
+import type { QualityTier } from '../render/tuning.js';
 import { createModules } from './modules.js';
 import { createModuleHost, type ModuleHost } from './registry.js';
 import { createDebugOverlay, type DebugOverlay } from './debug.js';
@@ -28,6 +30,7 @@ export interface AppOptions {
   overlayRoot: HTMLElement;
   seed?: number;
   framing?: FramingOverrides;
+  quality?: QualityTier;
 }
 
 export interface App {
@@ -36,10 +39,16 @@ export interface App {
   readonly seed: number;
   readonly view: Readonly<ViewState>;
   readonly host: ModuleHost;
+  /** Read-only view of the car, for telemetry and the test API. */
+  readonly car: CarView;
   /** Distance travelled this drive, metres. */
   distanceM(): number;
-  /** Fast-forwards the simulation to a distance, deterministically. */
-  warpTo(distanceM: number): void;
+  /**
+   * Runs `seconds` of simulation with no rendering, deterministically.
+   * The harness drives the car with this; who is steering is not its business.
+   */
+  advanceSeconds(seconds: number): void;
+  setCameraMode(mode: CameraMode): void;
   setDebugVisible(v: boolean): void;
   setFramingOverrides(overrides: FramingOverrides): void;
   /** Camera and scene-graph state, for diagnosing a bad frame from numbers. */
@@ -69,7 +78,7 @@ export function createApp(options: AppOptions): App {
 
   const events = createEventBus<GameEventMap>();
   const services = createServiceRegistry();
-  const renderer: Renderer = createRenderer(options.canvas);
+  const renderer: Renderer = createRenderer(options.canvas, options.quality);
   const scene = new THREE.Scene();
   const view = makeViewState();
 
@@ -101,6 +110,14 @@ export function createApp(options: AppOptions): App {
     debug.watch('speed', `${(car.speedMs * 3.6).toFixed(0)} km/h`);
     debug.watch('head', `${((view.heading * 180) / Math.PI).toFixed(1)}°`);
     debug.watch('look', `${((view.lookYaw * 180) / Math.PI).toFixed(1)}°`);
+    // Handling telemetry. Tuning a car from a picture is guesswork; these are
+    // the numbers that say what it is actually doing.
+    debug.watch('lat', `${car.lateralG.toFixed(2)} g`);
+    debug.watch('roll', `${((view.roll * 180) / Math.PI).toFixed(2)}°`);
+    debug.watch('pitch', `${((view.pitch * 180) / Math.PI).toFixed(2)}°`);
+    debug.watch('steer', `${((car.steerAngle * 180) / Math.PI).toFixed(1)}°`);
+    debug.watch('slip', `${((car.slipAngle * 180) / Math.PI).toFixed(1)}°`);
+    debug.watch('t', `${car.lateralM.toFixed(2)} m ${car.surface}`);
     debug.update(loop.stats, renderer.info, renderer.framing, host.timings);
   }
 
@@ -112,16 +129,14 @@ export function createApp(options: AppOptions): App {
     seed,
     view,
     host,
+    car,
     distanceM: () => car.distanceM,
 
-    warpTo(distanceM: number) {
-      const remaining = distanceM - car.distanceM;
-      if (remaining <= 0) return;
-      // Advanced by running real simulation steps rather than by assigning a
-      // distance: it exercises the same code path the game does, so what the
-      // harness photographs is what the game produces.
-      loop.advance(remaining / Math.max(1e-3, car.speedMs));
+    advanceSeconds(seconds: number) {
+      loop.advance(seconds);
     },
+
+    setCameraMode: (mode) => renderer.setCameraMode(mode),
 
     setDebugVisible: (v) => debug.setVisible(v),
 
@@ -162,8 +177,18 @@ export function createApp(options: AppOptions): App {
       host.resize(renderer.framing);
     },
 
-    start: () => loop.start(),
-    stop: () => loop.stop(),
+    start() {
+      // The modules are told as well as the loop. A module that owns something
+      // with its own clock — the AudioContext — would otherwise keep going
+      // while the game is backgrounded and nothing is stepping it.
+      host.resume();
+      loop.start();
+    },
+
+    stop() {
+      loop.stop();
+      host.pause();
+    },
 
     dispose() {
       loop.stop();

@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { ROAD, TERRAIN } from '../tuning.js';
 import { terrainHeightAt } from '../gen/terrain.js';
+import { biomeWeightsAt, makeBiomeWeights } from '../gen/biomes.js';
 import type { Stations } from '../gen/stations.js';
 import { computeNormals } from './road-mesh.js';
 
@@ -50,20 +51,25 @@ export function createTerrainMesh(material: THREE.Material, capacityStations: nu
 
   const positions = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
+  const biomes = new Float32Array(vertexCount * 3);
   const indices = new Uint32Array(quadCount * 6);
 
   const geometry = new THREE.BufferGeometry();
   const positionAttr = new THREE.BufferAttribute(positions, 3);
   const normalAttr = new THREE.BufferAttribute(normals, 3);
+  const biomeAttr = new THREE.BufferAttribute(biomes, 3);
   positionAttr.setUsage(THREE.DynamicDrawUsage);
   normalAttr.setUsage(THREE.DynamicDrawUsage);
+  biomeAttr.setUsage(THREE.DynamicDrawUsage);
   geometry.setAttribute('position', positionAttr);
   geometry.setAttribute('normal', normalAttr);
+  geometry.setAttribute('biome', biomeAttr);
   const indexAttr = new THREE.BufferAttribute(indices, 1);
   indexAttr.setUsage(THREE.DynamicDrawUsage);
   geometry.setIndex(indexAttr);
 
   const mesh = new THREE.Mesh(geometry, material);
+  const biome = makeBiomeWeights();
   mesh.frustumCulled = false;
   // Drawn after the road so that where the two surfaces coincide at the verge,
   // the road wins the depth test rather than flickering against it.
@@ -85,6 +91,7 @@ export function createTerrainMesh(material: THREE.Material, capacityStations: nu
       const sz = stations.z[slot] ?? 0;
       const heading = stations.heading[slot] ?? 0;
       const s = index * stations.spacing;
+      biomeWeightsAt(s, stations.seed, biome);
 
       const rx = Math.cos(heading);
       const rz = -Math.sin(heading);
@@ -95,6 +102,9 @@ export function createTerrainMesh(material: THREE.Material, capacityStations: nu
         positions[vi * 3] = sx + rx * t - originX;
         positions[vi * 3 + 1] = terrainHeightAt(s, t, sy, stations.seed) - originY;
         positions[vi * 3 + 2] = sz + rz * t - originZ;
+        biomes[vi * 3] = biome.mountain;
+        biomes[vi * 3 + 1] = biome.desert;
+        biomes[vi * 3 + 2] = biome.country;
       }
     }
 
@@ -119,6 +129,7 @@ export function createTerrainMesh(material: THREE.Material, capacityStations: nu
     geometry.setDrawRange(0, w);
     positionAttr.needsUpdate = true;
     normalAttr.needsUpdate = true;
+    biomeAttr.needsUpdate = true;
     indexAttr.needsUpdate = true;
     mesh.position.set(originX, originY, originZ);
   }

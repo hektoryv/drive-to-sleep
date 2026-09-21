@@ -1,6 +1,6 @@
 # 03 — Architecture
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
 ## The two rules
 
@@ -34,18 +34,24 @@ src/
 ├─ render/      engine layer: WebGL, camera rig, framing, post
 ├─ cockpit/     the 911 interior
 ├─ ui/          HUD and screens
+├─ audio/       the engine, the wind and the tyres — synthesised
 └─ fx/          particles, shake
 ```
 
 Each domain exposes one `GameModule`. The registry gives it its own
 `THREE.Group` and its own DOM layer and drives
-`init → start → step → frame → resize → dispose`. A module that stays inside
+`init → start → step → frame → resize → dispose`, plus `pause`/`resume` for
+anything holding a resource with a clock of its own. A module that stays inside
 its own group and overlay cannot affect another one.
+
+`audio/` uses neither its group nor its overlay — it has nothing to draw. It is
+in the list on the same terms as everything else because a domain is defined by
+what it owns, not by whether it happens to be visible.
 
 ## Coordinate systems
 
 Three of them. Confusing them is the most likely source of bugs, so they are
-named explicitly and conversions live in exactly one place (`world/stations.ts`).
+named explicitly and conversions live in exactly one place (`world/gen/stations.ts`).
 
 | Space | Symbol | Meaning |
 |---|---|---|

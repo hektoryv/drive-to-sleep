@@ -20,6 +20,12 @@ function resolveChromium(): string | undefined {
   const candidates = [
     process.env.CHROMIUM_PATH,
     `${process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers'}/chromium`,
+    // Local Windows development may have no Playwright-managed build after a
+    // package update, while the system browser is already present and fully
+    // compatible with the protocol Playwright uses.
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
   ];
   for (const c of candidates) {
     if (c !== undefined && c !== '' && existsSync(c)) return c;
@@ -31,7 +37,8 @@ export interface ShotState {
   seed: number;
   /** Distance to fast-forward to before shooting, in metres. */
   at: number;
-  time: 'day' | 'dusk' | 'night';
+  /** A named moment or a raw 0–1 phase. See MOMENTS in src/main.ts. */
+  time: string;
   debug: boolean;
   /** Framing overrides for a tuning sweep. Degrees for fov; fractions otherwise. */
   fov?: number;
@@ -39,6 +46,11 @@ export interface ShotState {
   dash?: number;
   /** Camera look-ahead, for before/after comparison. Defaults on. */
   look?: boolean;
+  /** 'chase' shows the car's line and body roll from outside. Default cockpit. */
+  cam?: 'cockpit' | 'chase';
+  /** Holds fixed control inputs after arriving, then runs for `holdS` seconds. */
+  hold?: { steer: number; throttle: number; brake: number };
+  holdS?: number;
   /** Caption used in a contact sheet, when the filename isn't the point. */
   label?: string;
 }
@@ -116,12 +128,24 @@ export async function startHarness(): Promise<Harness> {
       if (state.aperture !== undefined) q.set('aperture', String(state.aperture));
       if (state.dash !== undefined) q.set('dash', String(state.dash));
       if (state.look === false) q.set('look', '0');
+      if (state.cam !== undefined) q.set('cam', state.cam);
       const url = `${origin}/?${q.toString()}`;
       await page.goto(url, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__dts !== undefined, null, { timeout: 15000 });
       await page.evaluate(() => window.__dts?.ready);
       if (state.at > 0) {
         await page.evaluate((d) => window.__dts?.warpTo(d), state.at);
+      }
+      if (state.hold !== undefined) {
+        // Drive to the mark, then hold a fixed input — the only way to
+        // photograph the car mid-manoeuvre rather than mid-autopilot.
+        await page.evaluate(
+          (args) => {
+            window.__dts?.setScriptedInput(args.hold);
+            window.__dts?.advanceSeconds(args.seconds);
+          },
+          { hold: state.hold, seconds: state.holdS ?? 2 },
+        );
       }
       // Let a few real frames render from the warped state before looking.
       await settleFrames(page, 4);

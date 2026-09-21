@@ -14,8 +14,9 @@ export const CONTROL = {
   DEADZONE_FRAC: 0.04,
   /** Steering response curve: fine near centre, full lock still reachable. */
   STEER_CURVE_LINEAR: 0.35,
-  /** How fast the touch origin creeps toward a finger held at full deflection. */
-  ORIGIN_DRIFT_RATE: 0.12,
+  // There is deliberately no origin-creep rate. The origin is dragged along
+  // behind the finger and never moves on its own — see ADR-0013 for what the
+  // creeping version did to a held corner.
   /** Exponential rate at which steering returns to centre after lift-off. */
   RELEASE_RECENTRE_RATE: 6.0,
 } as const;

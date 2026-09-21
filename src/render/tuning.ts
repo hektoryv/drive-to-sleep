@@ -11,24 +11,24 @@ import { DEG } from '../core/math.js';
 // ---------------------------------------------------------------------------
 // Portrait framing
 //
-// The four bands stack to 1.0 and divide the display. See
+// The bands stack to 1.0 and divide the display. See
 // docs/02-art-direction.md for the diagram and the reasoning.
 // ---------------------------------------------------------------------------
 
 export const VIEW = {
-  /** Top strip: rear-view mirror and the distance readout. */
-  HEADER_FRACTION: 0.05,
+  /** No letterbox: sky reaches the top edge, as it does in the art target. */
+  HEADER_FRACTION: 0,
   /** The windscreen aperture — the only band the 3D world is drawn into. */
-  APERTURE_FRACTION: 0.46,
+  APERTURE_FRACTION: 0.61,
   /**
    * Dash top and the five-dial binnacle. Deliberately shallow: in the real car
    * the binnacle sits *behind* the wheel, so the dials can overlap the top of
    * the wheel band rather than needing a tall strip of their own. Every point
    * taken from here goes to the windscreen.
    */
-  DASH_FRACTION: 0.15,
+  DASH_FRACTION: 0.11,
   /** The wheel. Its bottom runs off the screen; we see the top two-thirds. */
-  WHEEL_FRACTION: 0.34,
+  WHEEL_FRACTION: 0.28,
 
   /**
    * Horizontal field of view. Specified horizontally, not vertically, so that
@@ -48,15 +48,25 @@ export const VIEW = {
    * Where the horizon sits within the aperture, as a fraction from its top.
    * Above 0.5 means more sky than road, which is where the mood lives.
    */
-  HORIZON_Y: 0.62,
+  HORIZON_Y: 0.68,
 
   /** Driver's eye height above the road surface, metres. */
   EYE_HEIGHT: 1.12,
   /** Eye offset from the car's centreline, metres. Negative = left-hand drive. */
   EYE_LATERAL: -0.36,
 
-  NEAR_PLANE: 0.1,
-  FAR_PLANE: 4000,
+  /**
+   * The near plane sits at 0.25 m rather than 0.1: nothing is closer than the
+   * dashboard, and every halving of the near plane costs depth precision
+   * across the entire rest of the range.
+   */
+  NEAR_PLANE: 0.25,
+  /**
+   * Far enough to contain the sky shell and the furthest ridge layer. This has
+   * to exceed `SKY.RADIUS_M` — when it did not, the sky was clipped away
+   * entirely and the world rendered against black.
+   */
+  FAR_PLANE: 12000,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -92,5 +102,46 @@ export const CAMERA = {
   RESPONSE_RATE: 4.5,
 } as const;
 
+/**
+ * Debug chase camera. Not a game feature — ADR-0006 locks the game to the
+ * cockpit — but the one view that shows the car's line through a corner and
+ * the body leaning from outside, which is otherwise impossible to photograph.
+ */
+export const CHASE = {
+  BACK_M: 9,
+  UP_M: 3.4,
+  /** How much of the body roll the chase camera inherits. */
+  ROLL_SHARE: 0.35,
+  /** Downward tilt, radians, so the car sits in the lower half of the frame. */
+  PITCH: -7 * DEG,
+} as const;
+
 /** Filmic tonemapping exposure. See ADR-0007. */
 export const TONEMAP_EXPOSURE = 1.15;
+
+export type QualityTier = 'low' | 'balanced' | 'high';
+
+/** GPU tiers are deliberately about fill-rate, the dominant phone cost. */
+export const QUALITY = {
+  low: { maxPixelRatio: 1, antialias: false, bloom: 0, grain: 0.0025 },
+  balanced: { maxPixelRatio: 1.5, antialias: true, bloom: 0.12, grain: 0.004 },
+  high: { maxPixelRatio: 2, antialias: true, bloom: 0.2, grain: 0.0055 },
+} as const satisfies Record<QualityTier, {
+  maxPixelRatio: number;
+  antialias: boolean;
+  bloom: number;
+  grain: number;
+}>;
+
+/** Final full-frame grade. Subtle: the authored palette must remain the picture. */
+export const POST = {
+  VIGNETTE: 0.24,
+  SATURATION: 1.06,
+  CONTRAST: 1.045,
+  BLOOM_THRESHOLD: 0.72,
+} as const;
+
+export function qualityTier(value: string | null | undefined): QualityTier {
+  if (value === 'low' || value === 'high' || value === 'balanced') return value;
+  return 'balanced';
+}

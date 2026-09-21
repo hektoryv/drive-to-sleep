@@ -1,0 +1,114 @@
+# Builds the Android APK.
+#
+# Why CI and not a local build: the development container this project is
+# written in cannot reach dl.google.com, so it has no Android SDK and no
+# Google Maven mirror — see ADR-0015. A GitHub runner has both. The practical
+# effect is that the APK is always built from a clean checkout of a pushed
+# commit, which is a better property than the reason we ended up with it.
+#
+# The debug APK is attached to a rolling `dev` prerelease so it has a stable
+# URL you can open on the phone:
+#
+#   https://github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk
+
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - claude/android-driving-game-plan-pw5z30
+      - codex/cockpit-reference-pass
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Capacitor 7 and AGP 8.7 both want a modern JDK; 21 is what the
+      # development container runs, so the two agree.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # The runner image already carries the Android SDK, so there is nothing
+      # to set up — only to make sure the two packages this project compiles
+      # against are present. android-actions/setup-android is deliberately not
+      # used: it installs the retired `tools` package by default and fails.
+      - name: Ensure SDK packages
+        run: |
+          sdkmanager=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          yes | "$sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+
+      - run: npm ci
+
+      # The architecture is the lint config (CLAUDE.md), so a build that
+      # violates it is not a build worth installing.
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Copy web build into the Android project
+        run: npx cap sync android
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the APK after the commit
+        id: apk
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/drive-to-sleep-dev.apk
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drive-to-sleep-${{ steps.apk.outputs.sha }}
+          path: out/drive-to-sleep-dev.apk
+          if-no-files-found: error
+
+      # A rolling prerelease, so the download link never changes and the phone
+      # gets a plain .apk rather than a zip it cannot open.
+      - name: Publish the rolling dev build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ steps.apk.outputs.sha }}
+          REF: ${{ github.ref_name }}
+        run: |
+          cat > out/notes.md <<NOTES
+          Debug APK built from \`$SHA\` on \`$REF\`.
+
+          **Install:** open this page on the phone, tap the .apk, and allow
+          installs from your browser when Android asks. The app requests no
+          permissions. Three fingers anywhere on the screen toggles the debug
+          readout.
+
+          Signed with Android's public debug key — fine for driving, not for
+          shipping.
+          NOTES
+          gh release delete dev --yes --cleanup-tag || true
+          gh release create dev out/drive-to-sleep-dev.apk \
+            --prerelease \
+            --title "Dev build $SHA" \
+            --notes-file out/notes.md

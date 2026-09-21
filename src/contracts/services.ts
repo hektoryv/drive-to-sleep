@@ -8,6 +8,7 @@
  * needs to know which other modules exist.
  */
 
+import type { DaylightView } from './daylight.js';
 import type { RoadQuery } from './world.js';
 import type { CarView, ControlState } from './vehicle.js';
 
@@ -24,6 +25,11 @@ export interface Services {
   car: CarView;
   /** Provided by `input/`. The current control input. */
   controls: ControlState;
+  /**
+   * Provided by `world/`. What time of day it is, and what colour the light
+   * is. The world owns the clock; this is how anything else finds out.
+   */
+  daylight: DaylightView;
 }
 
 export type ServiceKey = keyof Services;

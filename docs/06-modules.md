@@ -1,6 +1,6 @@
 # 06 — Modules and domain ownership
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
 This project is built so that several people — or several agents — can work on
 different parts of it at once without their changes reaching each other. That
@@ -16,10 +16,11 @@ its shaders and its tuning constants.
 |---|---|---|
 | **world** | The environment. Road generation, terrain, props, biomes, sky — *and* all of their meshes and shaders. | `src/world/` |
 | **sim** | The car. Vehicle model, attitude, traffic, collision, scoring. | `src/sim/` |
-| **input** | Touch handling, control curves. | `src/input/` |
+| **input** | Touch handling, control curves, the dynamic-origin scheme. | `src/input/` |
 | **render** | The engine layer: WebGL setup, the camera rig, framing, post-processing. Infrastructure, not content. | `src/render/` |
-| **cockpit** | The 911 interior. Dash, wheel, gauges, mirror. | `src/cockpit/` |
+| **cockpit** | The 70s interior. Dash, wheel, gauges, mirror. Drawn in its own pass (ADR-0017). | `src/cockpit/` |
 | **ui** | HUD, start screen, pause panel, summary. | `src/ui/` |
+| **audio** | The engine note, wind and tyres. Synthesised — no samples, no music. | `src/audio/` |
 | **fx** | Particles, camera shake. | `src/fx/` |
 
 And three shared things that are nobody's domain:
@@ -109,6 +110,12 @@ Adding a key here means a new cross-domain capability exists. Exactly one
 domain provides each service; providing one twice is an error at startup, with
 a message saying so.
 
+There are four: `road` and `daylight` from `world/`, `car` from `sim/`, and
+`controls` from `input/`. `daylight` was the most recent and is a good example
+of when a key is earned — the cabin has to be lit by the same sun as the road,
+and no amount of local cleverness in `cockpit/` can work out what colour that
+sun is.
+
 **3. `src/app/modules.ts`** — the manifest.
 One line per domain. Adding a domain touches this file and nothing else.
 
@@ -124,9 +131,11 @@ each domain owns its own:
 | `src/world/tuning.ts` | road, events, terrain, time of day |
 | `src/render/tuning.ts` | framing, field of view, camera look-ahead |
 | `src/input/tuning.ts` | control radii, curves, deadzone |
+| `src/audio/tuning.ts` | engine voices, wind, tyres, master level |
+| `src/cockpit/tuning.ts` | cabin geometry, wheel, colours, cabin light |
 
 The rule from `05-conventions.md` still holds — no feel or look constant is
-written inline in logic — it just has four homes instead of one.
+written inline in logic — it has one home per domain instead of one shared file.
 
 ## Working in parallel
 
@@ -144,6 +153,37 @@ If you are picking up one domain:
 
 The debug overlay shows per-module step cost, so "which domain got slower" is
 answerable without profiling.
+
+## A worked example: adding the audio domain
+
+Sound was ruled out at the start of the project and ruled back in on
+2026-09-20 (ADR-0016) — the least planned-for change this codebase has had, and
+therefore the only honest test of the claim this document makes.
+
+What it cost outside `src/audio/`:
+
+- **one line** in `src/app/modules.ts`, the manifest;
+- **one word** in `eslint.config.js`, adding `audio` to the domain list so the
+  boundary is enforced for it too;
+- **two additive contract fields** — `CarView.maxRpm`, and `pause`/`resume` on
+  `GameModule` — each of which was independently justified: the tachometer
+  needs the redline, and an AudioContext keeps playing while backgrounded.
+
+No domain changed. `sim/` does not know the car can be heard, and `world/` does
+not know the tyres make a different noise on its gravel. If a future domain
+costs more than this, something has gone wrong with the seams rather than with
+the domain.
+
+## The one sanctioned exception
+
+`input/pointer.ts` listens on `window` rather than on its own overlay layer.
+That is deliberate: "input" is precisely the domain whose job is global, the
+game is fullscreen, and routing touches through a stack of overlay layers would
+make the control scheme depend on DOM ordering — which is exactly the kind of
+accidental coupling between domains the architecture exists to prevent.
+
+It is the only one. If you find yourself wanting a second, that is a sign a
+contract is missing.
 
 ## What goes in `app/`
 

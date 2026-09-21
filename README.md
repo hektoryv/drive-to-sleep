@@ -5,26 +5,54 @@ An endless, calm driving game for Android. You sit in the driver's seat of a
 mountain, desert, country — as the sun goes down and comes back up.
 
 One finger does everything. Left/right steers. Up/down is gas and brake.
-No sound.
+The engine, the wind and the tyres are synthesised from the car's own state;
+there is no music and no interface sound.
 
 ## Status
 
-**Phase 1 complete.** The road generates: curvature, grade and width as noise
-fields over distance with hairpins, sweepers and crests injected on top, swept
-into geometry with terrain either side. The codebase is split into sealed
-domains so it can be worked on from several directions at once
-([docs/06-modules.md](docs/06-modules.md)).
+**Phase 4 is in progress.** The road and driving model are device-approved;
+the current build adds the reference-led red-and-black cabin, five live dials,
+sunset lighting, and synthesised engine/wind/tyre sound. 212 tests include a
+20 km drive over the real generated road without leaving the tarmac.
 
-Phase 2 is next, and it's the one that matters: making the car feel good.
+Sound still needs its first listen on a real device, and the cockpit still
+needs its mirror and final material/detail pass. See
+[docs/TODO.md](docs/TODO.md) for the live state rather than the phase history.
+
+## Getting it on a phone
+
+Every push builds a debug APK and attaches it to a rolling `dev` prerelease, so
+the link never changes ([ADR-0015](docs/decisions/ADR-0015-ci-android-builds.md)):
+
+**[releases/download/dev/drive-to-sleep-dev.apk](https://github.com/hektoryv/drive-to-sleep/releases/download/dev/drive-to-sleep-dev.apk)**
+
+Open it on the phone, tap it, allow installs from your browser when asked. It
+asks for no permissions, because it has none. Three fingers anywhere on the
+screen toggles the debug readout.
+
+There is also a **Pages** workflow that publishes the web build to a URL — a
+much faster loop for judging handling, since a URL is a second and an APK
+install is a minute. It is manual, and needs Settings → Pages → Source set to
+GitHub Actions first, because publishing a public site is your call rather than
+a push's. What it can't tell you is WebView touch latency, which is Phase 6's
+known risk.
+
+The codebase is split into sealed domains so it can be worked on from several
+directions at once — see [docs/06-modules.md](docs/06-modules.md).
 
 ```
 npm install
 npm run dev                                   # play it in a browser
-npm test                                      # 49 tests
+npm test                                      # 212 tests
 npm run shoot -- --seed 1 --at 500 --debug 1  # photograph it
 npm run shoot -- --sheet                      # contact sheet
 npm run shoot -- --sequence --from 480 --to 640   # a strip through one corner
 npm run lint                                  # also checks the architecture
+npm run shoot -- --handling                   # the car caught mid-corner
+npm run telemetry                             # drive, and print what it did
+npm run shoot -- --sheet                      # the whole day, one sheet
+npm run shoot -- --at 200 --time golden       # the art target's moment
+npm run android                               # build + copy into android/
 ```
 
 ## Where things are
@@ -38,6 +66,7 @@ npm run lint                                  # also checks the architecture
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases, tasks, exit criteria |
 | [docs/05-conventions.md](docs/05-conventions.md) | Code style, tuning policy, testing, definition of done |
 | [docs/06-modules.md](docs/06-modules.md) | Domain ownership, module lifecycle, working in parallel |
+| [docs/reference/art-target.png](docs/reference/art-target.png) | The picture this is trying to be |
 | [docs/decisions/](docs/decisions/) | Locked decisions, one file each, with the reasoning |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Append-only log of what actually happened |
 | [docs/TODO.md](docs/TODO.md) | Live backlog |

@@ -1,8 +1,8 @@
 # 04 — Roadmap
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-21*
 
-Eight phases. Each has a **goal**, a **task list**, and an **exit criterion**
+Nine phases. Each has a **goal**, a **task list**, and an **exit criterion**
 that must be demonstrable before the next phase starts. Progress is logged in
 [PROGRESS.md](PROGRESS.md); the live task list is [TODO.md](TODO.md).
 
@@ -61,47 +61,68 @@ noise rather than more events. See PROGRESS.md.
 
 ---
 
-## Phase 2 — The drive *(current)*
-
----
+## Phase 2 — The drive ✅ *signed off 2026-09-20, calibration deferred*
 
 **Goal:** the car feels good. This is the most important phase in the project.
 
-- [ ] Vehicle model: speed, yaw, grip, slide, surfaces
-- [ ] Attitude springs: roll, pitch, heave
-- [ ] Pointer handling + dynamic origin + drift + release recentre
-- [ ] Control curves and the steering speed-falloff
-- [ ] Driver-eye camera consuming attitude (no cockpit geometry yet —
-      just the eye point, so the lean is unmistakable)
-- [ ] Off-road: grip loss, drag, rumble
-- [ ] Handling regression tests
-- [ ] **Tuning pass.** Budget real time here. Expect to go round several times.
+- [x] Vehicle model: speed, yaw, grip, slide, surfaces
+- [x] Attitude springs: roll, pitch, heave
+- [x] Pointer handling + dynamic origin + release recentre
+- [x] Control curves and the steering speed-falloff
+- [x] Driver-eye camera consuming attitude
+- [x] Off-road: grip loss, drag, rumble
+- [x] Handling regression tests — 80 of them, driving the real generated road
+- [x] An autopilot, so the harness can drive rather than teleport
+- [x] A chase camera and `npm run telemetry`
+- [x] **Driven on a real device.** 2026-09-20, on the first APK.
+- [ ] **Calibration pass** — acceleration, top speed, cornering g. Deferred
+      by the owner: *"as long as you keep stuff properly modular, we can just
+      fix that later."* Every one of these numbers is in `sim/tuning.ts`.
 
-**Exit:** you drive it on your phone and it feels good. Not "works" — *good*.
-Corners you can place the car in, a lean you can feel, a throttle you want to
-hold open. If it doesn't feel right, we do not proceed; everything after this
-is decoration on top of this.
+**Exit: met.** The criterion was that you drive it and it feels good. Driven,
+on the first Android build, 2026-09-20: *"got it running, really good!"*
 
-**Watch out for:** roll that looks right in a screenshot but reads as seasick
-in motion. Screenshots cannot judge this phase — this is the one place where a
-build on your actual phone is genuinely required.
+With one explicit carve-out, made by the owner in the same breath: **nothing is
+calibrated.** Acceleration, top speed and cornering g are placeholder numbers
+that have never been measured against anything. That is deferred rather than
+failed — the phase was about whether the *model* produces a car you can place
+and lean on, and it does. What the numbers should be is a separate question,
+answerable at any point, because every one of them is a named constant in
+`sim/tuning.ts` and none of them is inlined anywhere.
+
+This is the payoff for non-negotiable 5, and it is worth saying out loud: a
+handling pass can be a pull request that touches one file.
+
+**The warning held**, with one qualification. Screenshots still cannot judge
+this phase. But what they *could* do turned out to be more than expected once
+the harness could drive the car and hold an input: a still at 0.85 g with the
+body at full lean is a real check that the model is doing something, even if it
+says nothing about how it feels getting there.
 
 ---
 
-## Phase 3 — The view
+## Phase 3 — The view *(complete 2026-09-21)*
 
 **Goal:** it looks good.
 
-- [ ] Sky: gradient shader, sun disc, horizon glow, stars, moon
-- [ ] Time-of-day cycle driving sun position and all palettes
-- [ ] Fog derived from sky colour, plus height fog
-- [ ] Filmic tonemapping, colour grading
-- [ ] Distant mountain impostor layers with parallax
-- [ ] Instanced billboard props with the near-3D cross-fade band
-- [ ] Biome parameter sets and distance-driven blending
-- [ ] Prop tables per biome, weighted by blend
-- [ ] Post stack: bloom, vignette, grain
-- [ ] Quality tiers
+- [x] Sky: gradient shader, sun disc, horizon glow, clouds, stars
+- [x] Time-of-day cycle driving sun position and all palettes
+- [x] Fog derived from sky colour
+- [x] Filmic tonemapping — in since Phase 0 (ADR-0007)
+- [x] Distant mountain impostor layers with parallax
+- [x] Billboard vegetation — mounds and spires, silhouette drawn in the
+      fragment shader, one draw call
+- [x] The moon as a night key light
+- [x] Height fog on top of the distance fog
+- [x] Telegraph poles and wires — the near-field speed cue. Something has to
+      pass *close* to the car, and a maintained verge is bare of everything else.
+- [x] Chevron signs on corners tighter than a 150 m radius
+- [x] Guardrail where the ground falls away
+- [x] The near-3D cross-fade band, for props close enough that flatness shows
+- [x] Biome parameter sets and distance-driven blending
+- [x] Prop tables per biome, weighted by blend
+- [x] Colour grading, and the post stack: bloom, vignette, grain
+- [x] Quality tiers
 
 **Exit:** a contact sheet of ~20 screenshots across seeds, biomes and times of
 day where the great majority look like somewhere you want to be.
@@ -112,19 +133,25 @@ popping.
 
 ---
 
-## Phase 4 — The cockpit
+## Phase 4 — The cockpit *(postponed; procedural fallback active)*
 
 **Goal:** you're sitting in the car.
 
-- [ ] Interior geometry: dash, cowl, A-pillars, door cards, console
-- [ ] Steering wheel: rim, three spokes, hub — rotating with the finger
-- [ ] Five-dial binnacle with correct overlapping layout
-- [ ] Live needles: tach and speedo driven by the sim
-- [ ] Dial backlighting rising with falling ambient light
+- [x] The second render pass the cabin needs to exist at all (ADR-0017)
+- [x] Steering wheel: rim, three spokes, hub — rotating with the finger
+- [x] Layered dash, cowl, A-pillar, door-card and vent silhouettes
+- [x] Five-dial binnacle with the overlapping layout from the reference
+- [x] Live needles: tach and speedo driven by the sim
+- [x] Dial backlighting rising with falling ambient light
 - [ ] Glass specular streak across the dial covers
 - [ ] Rear-view mirror
-- [ ] Final portrait framing: aperture proportions, FOV, horizon placement
+- [x] Reference-led portrait framing: 61% aperture, 72° FOV, 68% horizon
 - [ ] Material finishes: matte vinyl / semi-gloss leather / brushed aluminium
+
+The listed geometry is the restored procedural 3D fallback. A downloaded
+full-car GLB and two sprite implementations all failed device review; ADR-0020
+postpones final cockpit art until a purpose-built, separable interior model is
+available. Phase 3 resumes in the meantime.
 
 **Exit:** a night screenshot where the dials are the only light source and the
 cabin is unmistakably a 70s sports car. That single image is the test.
@@ -141,7 +168,8 @@ cabin is unmistakably a 70s sports car. That single image is the test.
 - [ ] Capsule collision, impulse, speed scrub
 - [ ] Collision jolt into the attitude springs
 - [ ] Scoring: distance, flow, overtakes
-- [ ] HUD: gauge-based speed, distance, flow arc, overtake tally
+- [x] First HUD slice: always-visible numeric speedometer
+- [ ] HUD remainder: distance, flow arc, overtake tally
 - [ ] Start screen, pause panel, drive summary
 - [ ] Persistence: best distance, settings, resume point
 
@@ -150,18 +178,62 @@ drive, see the summary, reopen and resume where you left off.
 
 ---
 
+## Phase 8 — Sound *(first slice landed 2026-09-20)*
+
+*Numbered 8 because it was defined last and the numbers are identities —
+PROGRESS.md and the ADRs refer to phases by number, so renumbering would
+silently rewrite history. It runs here, between 5 and 6.*
+
+**Goal:** the car sounds like it is being driven.
+
+Sound was a non-goal until the owner drove the first build and reversed it
+(ADR-0016). A first slice is in, on the same terms as Phase 6's wrapper: the
+domain exists and makes the right noise, and the rest is a phase.
+
+- [x] `audio/` as a sealed domain — synthesised, no samples, no music
+- [x] Engine: sub, body and harmonic voices, lowpass opening with load
+- [x] Wind: filtered noise, square law in speed
+- [x] Tyres: filtered noise, colour by surface, level by lateral load
+- [x] Starts on the first touch; fades out when backgrounded
+- [ ] **Mix pass on a device.** Phone speakers, then headphones. The engine is
+      the one that will be wrong — it has never been heard.
+- [ ] A mute control. Lands with the Phase 5 HUD; until then the volume keys
+      are the interface.
+- [ ] Surface transitions — a wheel dropping onto gravel should be a moment,
+      and right now it is a crossfade
+- [ ] Rumble strips and impacts, driven by the events `sim/` already emits
+- [ ] Wind through the quarter-light: a cue for speed that is not just level
+- [ ] Decide, as its own ADR, whether a music bed is allowed after all. The
+      answer today is no.
+
+**Exit:** twenty minutes with headphones on without wanting to turn it off,
+and the same twenty minutes muted without missing it.
+
+**Watch out for:** a synthesised engine turning into a dentist's drill. The
+guard is that level must come mostly from *load*, not revs — an engine coasting
+at 6000 rpm is much quieter than one pulling at 3000, and the test suite
+asserts it.
+
+---
+
 ## Phase 6 — Android
 
 **Goal:** it's on your phone as a real app.
 
-- [ ] Capacitor project, portrait lock, fullscreen/immersive, no status bar
-- [ ] Back-button handling, lifecycle (pause on background, resume correctly)
-- [ ] Keep-awake while driving
-- [ ] App icon and splash
+*Opened early, out of order, because Phase 2's exit criterion needs a device
+and nothing else can supply one. The performance, latency and thermal work
+stays here; only the wrapper was pulled forward.*
+
+- [x] Capacitor project, portrait lock, fullscreen/immersive, no status bar
+- [x] Lifecycle — the loop stops while backgrounded and resumes cleanly
+- [x] Keep-awake while driving
+- [x] App icon (adaptive) and a splash that is just the cabin black
+- [x] Built in CI, published as an installable APK (ADR-0015)
+- [ ] Back-button handling — currently Capacitor's default, which exits
 - [ ] Device performance pass: profile, then cut whatever's costing most
 - [ ] Touch latency check — WebView input lag is the known risk here
 - [ ] Battery/thermal check over a 20-minute drive
-- [ ] Signed release APK, offline verified, no permissions requested
+- [ ] Signed release APK, offline verified (no permissions are requested already)
 
 **Exit:** a signed APK you can install and drive for twenty minutes without the
 phone getting hot or the frame rate sagging.
