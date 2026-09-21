@@ -57,6 +57,10 @@ export function createRenderer(canvas: HTMLCanvasElement, quality: QualityTier =
   // wipe the first. With autoClear left on, rendering the cockpit over the
   // full viewport clears the whole canvas and the world disappears.
   gl.autoClear = false;
+  // There are up to three render calls in one displayed frame (world,
+  // cockpit, post). Accumulate renderer.info across all of them so the
+  // performance readouts report the real submitted draw/triangle totals.
+  gl.info.autoReset = false;
   // Filmic tonemapping from day one — ADR-0007. It is most of the difference
   // between "looks like a game" and "looks good", and retro-fitting it later
   // would invalidate every colour choice made before it.
@@ -114,6 +118,7 @@ export function createRenderer(canvas: HTMLCanvasElement, quality: QualityTier =
   }
 
   function render(scene: THREE.Scene, view: Readonly<ViewState>): void {
+    gl.info.reset();
     const sin = Math.sin(view.heading);
     const cos = Math.cos(view.heading);
 

@@ -24,6 +24,7 @@ import type { QualityTier } from '../render/tuning.js';
 import { createModules } from './modules.js';
 import { createModuleHost, type ModuleHost } from './registry.js';
 import { createDebugOverlay, type DebugOverlay } from './debug.js';
+import { createPerformanceMeter, type PerformanceMeter } from './performance.js';
 
 export interface AppOptions {
   canvas: HTMLCanvasElement;
@@ -85,6 +86,7 @@ export function createApp(options: AppOptions): App {
   if (options.framing !== undefined) renderer.setFramingOverrides(options.framing);
 
   const debug: DebugOverlay = createDebugOverlay(options.overlayRoot);
+  const performanceMeter: PerformanceMeter = createPerformanceMeter(options.overlayRoot);
 
   const host = createModuleHost(createModules({ view }), {
     seed,
@@ -119,6 +121,7 @@ export function createApp(options: AppOptions): App {
     debug.watch('slip', `${((car.slipAngle * 180) / Math.PI).toFixed(1)}°`);
     debug.watch('t', `${car.lateralM.toFixed(2)} m ${car.surface}`);
     debug.update(loop.stats, renderer.info, renderer.framing, host.timings);
+    performanceMeter.update(loop.stats, renderer.info, renderer.framing, renderer.quality);
   }
 
   const loop = createLoop({ update, render }, { stepHz: SIM.STEP_HZ, maxSubSteps: SIM.MAX_SUB_STEPS });
@@ -194,6 +197,7 @@ export function createApp(options: AppOptions): App {
       loop.stop();
       host.dispose();
       debug.dispose();
+      performanceMeter.dispose();
       renderer.dispose();
       events.clear();
     },
